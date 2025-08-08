@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import SearchSection from "@/components/search-section";
 import CurrentlyPlaying from "@/components/currently-playing";
 import PlaylistQueue from "@/components/playlist-queue";
-import ParticipantsSection from "@/components/participants-section";
 import { Users } from "lucide-react";
 import type { Room } from "@shared/schema";
 
@@ -150,7 +149,6 @@ export default function Home() {
           <PlaylistQueue room={room} />
         </div>
 
-        <ParticipantsSection participants={room.participants} />
       </main>
     </div>
   );
