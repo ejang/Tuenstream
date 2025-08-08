@@ -35,17 +35,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (message.type === 'join_room') {
           currentRoomId = message.roomId;
           
-          if (!roomConnections.has(currentRoomId)) {
-            roomConnections.set(currentRoomId, new Set());
-          }
-          roomConnections.get(currentRoomId)!.add(ws);
-          
-          const room = await storage.getRoom(currentRoomId);
-          if (room) {
-            ws.send(JSON.stringify({
-              type: 'room_state',
-              data: room
-            }));
+          if (currentRoomId) {
+            if (!roomConnections.has(currentRoomId)) {
+              roomConnections.set(currentRoomId, new Set());
+            }
+            const roomWs = roomConnections.get(currentRoomId);
+            if (roomWs) {
+              roomWs.add(ws);
+            }
+            
+            const room = await storage.getRoom(currentRoomId);
+            if (room) {
+              ws.send(JSON.stringify({
+                type: 'room_state',
+                data: room
+              }));
+            }
           }
         }
       } catch (error) {
@@ -55,9 +60,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on('close', () => {
       if (currentRoomId && roomConnections.has(currentRoomId)) {
-        roomConnections.get(currentRoomId)!.delete(ws);
-        if (roomConnections.get(currentRoomId)!.size === 0) {
-          roomConnections.delete(currentRoomId);
+        const roomWs = roomConnections.get(currentRoomId);
+        if (roomWs) {
+          roomWs.delete(ws);
+          if (roomWs.size === 0) {
+            roomConnections.delete(currentRoomId);
+          }
         }
       }
     });
