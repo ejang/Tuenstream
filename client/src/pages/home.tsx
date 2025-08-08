@@ -21,7 +21,7 @@ export default function Home() {
   const [participantName, setParticipantName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [roomName, setRoomName] = useState("");
-  const [isJoining, setIsJoining] = useState(false);
+  const [isCreating, setIsCreating] = useState(true);
 
   const { data: room, isLoading } = useQuery<Room>({
     queryKey: ["/api/rooms", roomId],
@@ -135,24 +135,33 @@ export default function Home() {
               <div className="text-xs font-mono text-muted-foreground">iPod Music</div>
             </div>
             <div className="p-6 space-y-5">
-              <Button
-                onClick={handleCreateRoom}
-                disabled={createRoomMutation.isPending}
-                className="w-full bg-accent hover:bg-secondary text-foreground h-12 rounded-xl font-medium shadow-sm border border-border"
-              >
-                <Radio className="w-4 h-4 mr-2" />
-                Create Room
-              </Button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border"></div>
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-primary px-3 text-muted-foreground font-mono">or join existing</span>
-                </div>
+              {/* Mode Toggle */}
+              <div className="flex bg-secondary/30 rounded-xl p-1 mb-4">
+                <button
+                  onClick={() => setIsCreating(true)}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isCreating
+                      ? 'bg-accent text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Radio className="w-4 h-4 mr-2 inline" />
+                  Create Room
+                </button>
+                <button
+                  onClick={() => setIsCreating(false)}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    !isCreating
+                      ? 'bg-text text-primary shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Users className="w-4 h-4 mr-2 inline" />
+                  Join Room
+                </button>
               </div>
 
+              {/* Input Fields */}
               <div className="space-y-3">
                 <Input
                   placeholder="Room Code"
@@ -160,26 +169,41 @@ export default function Home() {
                   onChange={(e) => setRoomCode(e.target.value)}
                   className="bg-input border-border rounded-xl h-12 font-mono text-sm placeholder:text-muted-foreground"
                 />
-                <Input
-                  placeholder="Room Name"
-                  value={roomName}
-                  onChange={(e) => setRoomName(e.target.value)}
-                  className="bg-input border-border rounded-xl h-12 text-sm placeholder:text-muted-foreground"
-                />
+                {isCreating && (
+                  <Input
+                    placeholder="Room Name"
+                    value={roomName}
+                    onChange={(e) => setRoomName(e.target.value)}
+                    className="bg-input border-border rounded-xl h-12 text-sm placeholder:text-muted-foreground"
+                  />
+                )}
                 <Input
                   placeholder="Your Name"
                   value={participantName}
                   onChange={(e) => setParticipantName(e.target.value)}
                   className="bg-input border-border rounded-xl h-12 text-sm placeholder:text-muted-foreground"
                 />
-                <Button
-                  onClick={handleJoinRoom}
-                  disabled={joinRoomMutation.isPending}
-                  className="w-full bg-text hover:bg-foreground text-primary h-12 rounded-xl font-medium shadow-sm"
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Join Room
-                </Button>
+                
+                {/* Action Button */}
+                {isCreating ? (
+                  <Button
+                    onClick={handleCreateRoom}
+                    disabled={createRoomMutation.isPending}
+                    className="w-full bg-accent hover:bg-secondary text-foreground h-12 rounded-xl font-medium shadow-sm border border-border"
+                  >
+                    <Radio className="w-4 h-4 mr-2" />
+                    {createRoomMutation.isPending ? 'Creating...' : 'Create Room'}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleJoinRoom}
+                    disabled={joinRoomMutation.isPending}
+                    className="w-full bg-text hover:bg-foreground text-primary h-12 rounded-xl font-medium shadow-sm"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    {joinRoomMutation.isPending ? 'Joining...' : 'Join Room'}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
