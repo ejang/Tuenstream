@@ -44,6 +44,8 @@ export default function SearchSection({ roomId }: SearchSectionProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomId] });
+      // Clear search results after adding song
+      setSearchQuery("");
       toast({
         title: "Song added",
         description: "Song has been added to the queue",

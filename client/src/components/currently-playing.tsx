@@ -381,18 +381,31 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
             </div>
           )}
 
-          {/* AI Controls */}
-          <div className="mt-4 p-4 bg-accent/20 rounded-lg border border-accent">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Bot className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-secondary">AI 자동 선곡</span>
+          {/* AI Controls - Enhanced Visibility */}
+          <div className="mt-4 p-5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border-2 border-blue-400/30 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <Bot className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <span className="text-base font-semibold text-foreground">AI 자동 선곡</span>
+                  <div className="text-xs text-blue-300 mt-0.5">
+                    {room.autoSelection ? "✨ 활성화됨" : "💤 비활성화됨"}
+                  </div>
+                </div>
               </div>
-              <Switch
-                checked={room.autoSelection}
-                onCheckedChange={() => toggleAutoSelectionMutation.mutate()}
-                disabled={toggleAutoSelectionMutation.isPending}
-              />
+              <div className="flex items-center gap-2">
+                <div className="text-xs text-muted-foreground">
+                  {room.autoSelection ? "ON" : "OFF"}
+                </div>
+                <Switch
+                  checked={room.autoSelection}
+                  onCheckedChange={() => toggleAutoSelectionMutation.mutate()}
+                  disabled={toggleAutoSelectionMutation.isPending}
+                  className="data-[state=checked]:bg-blue-500"
+                />
+              </div>
             </div>
             
             <div className="flex items-center justify-between">
