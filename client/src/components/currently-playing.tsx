@@ -190,7 +190,7 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
                   <div className="mt-3 space-y-1">
                     <div className="flex items-center justify-between text-xs font-mono" style={{ color: '#000' }}>
                       <span className="font-bold">{formatTime(localCurrentTime)}</span>
-                      <span className="font-bold">{room.currentTrack.duration}</span>
+                      <span className="font-bold">{formatTime(player?.getDuration() || 0)}</span>
                     </div>
                     <div className="relative">
                       {/* Background track */}
