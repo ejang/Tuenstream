@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Music } from "lucide-react";
 import type { Participant } from "@shared/schema";
 
 interface ParticipantsSectionProps {
@@ -27,7 +28,10 @@ export default function ParticipantsSection({ participants }: ParticipantsSectio
                 </div>
                 <div className="text-center">
                   <p className="text-xs font-medium text-foreground truncate max-w-16 leading-tight">{participant.name}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{participant.songsAdded}</p>
+                  <div className="flex items-center justify-center space-x-1 mt-0.5">
+                    <Music className="w-2.5 h-2.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground font-mono">{participant.songsAdded}</span>
+                  </div>
                 </div>
               </div>
             ))}
