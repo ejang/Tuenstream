@@ -121,39 +121,53 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
             <div id="youtube-player" className="hidden"></div>
             
             {/* LCD Screen */}
-            <div className="bg-secondary rounded-lg p-4 mb-6 shadow-inner border border-accent">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-mono text-text opacity-60">iPod</div>
-                <div className="text-xs font-mono text-text opacity-60">♪♪♪</div>
+            <div className="bg-secondary rounded-lg p-3 mb-6 shadow-inner border border-accent" style={{ backgroundColor: '#a8b4a8', color: '#000' }}>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-xs font-mono opacity-60">iPod</div>
+                <div className="text-xs font-mono opacity-60">♪♪♪</div>
               </div>
               
               {room.currentTrack ? (
-                <div className="space-y-1">
-                  <div className="text-sm font-medium text-foreground truncate leading-tight">
+                <div className="space-y-2">
+                  <div className="text-sm font-medium truncate leading-tight" style={{ color: '#000' }}>
                     {room.currentTrack.title}
                   </div>
-                  <div className="text-xs text-muted-foreground truncate">
+                  <div className="text-xs truncate opacity-75">
                     {room.currentTrack.artist}
                   </div>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <div className="text-xs font-mono text-text">
-                      {formatTime(localCurrentTime)}
+                  
+                  {/* Time and Progress Bar - iPod Style */}
+                  <div className="mt-3 space-y-1">
+                    <div className="flex items-center justify-between text-xs font-mono" style={{ color: '#000' }}>
+                      <span className="font-bold">{formatTime(localCurrentTime)}</span>
+                      <span className="font-bold">{room.currentTrack.duration}</span>
                     </div>
-                    <div className="flex-1 bg-border rounded-full h-1">
+                    <div className="relative">
+                      <div className="w-full h-1 bg-black/20 rounded-full">
+                        <div 
+                          className="h-1 bg-black rounded-full transition-all duration-300" 
+                          style={{ width: `${Math.min((localCurrentTime / (player?.getDuration() || 1)) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                      {/* Progress indicator dot */}
                       <div 
-                        className="bg-text h-1 rounded-full transition-all duration-300" 
-                        style={{ width: `${Math.min((localCurrentTime / (player?.getDuration() || 1)) * 100, 100)}%` }}
+                        className="absolute top-1/2 transform -translate-y-1/2 w-2 h-2 bg-black rounded-full transition-all duration-300"
+                        style={{ left: `${Math.min((localCurrentTime / (player?.getDuration() || 1)) * 100, 100)}%`, marginLeft: '-4px' }}
                       ></div>
                     </div>
-                    <div className="text-xs font-mono text-text">
-                      {room.currentTrack.duration}
+                  </div>
+                  
+                  {/* Playback Status */}
+                  <div className="text-center mt-2">
+                    <div className="text-xs font-mono opacity-75">
+                      {room.isPlaying ? '▶ PLAYING' : '⏸ PAUSED'}
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <div className="text-sm text-muted-foreground">No music playing</div>
-                  <div className="text-xs text-muted-foreground mt-1">Add songs to start</div>
+                  <div className="text-sm" style={{ color: '#000' }}>No music playing</div>
+                  <div className="text-xs opacity-75 mt-1">Add songs to start</div>
                 </div>
               )}
             </div>
