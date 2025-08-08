@@ -54,6 +54,13 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
     }
   }, [room.currentTime, room.isPlaying, room.currentTrack?.id]);
 
+  // Update local time from YouTube player when playing
+  useEffect(() => {
+    if (room.isPlaying && currentTime > 0) {
+      setLocalCurrentTime(currentTime);
+    }
+  }, [currentTime, room.isPlaying]);
+
   const playPauseMutation = useMutation({
     mutationFn: async ({ action, currentTime }: { action: 'play' | 'pause'; currentTime: number }) => {
       const response = await apiRequest("POST", `/api/rooms/${room.id}/${action}`, { currentTime });
@@ -197,7 +204,7 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
                       
                       {/* Moving progress dot */}
                       <div 
-                        className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-sm transition-all duration-1000 ease-linear"
+                        className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-sm transition-all duration-500 ease-out"
                         style={{ 
                           left: `${Math.min((localCurrentTime / (player?.getDuration() || 1)) * 100, 100)}%`, 
                           marginLeft: '-6px',

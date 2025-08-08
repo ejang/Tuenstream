@@ -70,14 +70,20 @@ export function useYouTubePlayer(videoId: string | null, onEnded?: () => void, o
       }
       
       timeUpdateInterval.current = setInterval(() => {
-        if (player && isPlayerReady) {
-          const time = player.getCurrentTime();
-          setCurrentTime(time);
-          if (onTimeUpdate) {
-            onTimeUpdate(time);
+        if (player && isPlayerReady && typeof player.getCurrentTime === 'function') {
+          try {
+            const time = player.getCurrentTime();
+            if (time !== undefined && time >= 0) {
+              setCurrentTime(time);
+              if (onTimeUpdate) {
+                onTimeUpdate(time);
+              }
+            }
+          } catch (error) {
+            console.log('Error getting current time:', error);
           }
         }
-      }, 1000); // Update every second
+      }, 500); // Update every 500ms for smoother movement
     };
 
     const stopTimeTracking = () => {
