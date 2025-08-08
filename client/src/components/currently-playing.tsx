@@ -16,6 +16,9 @@ interface CurrentlyPlayingProps {
 export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
   const { toast } = useToast();
   const [localCurrentTime, setLocalCurrentTime] = useState(room.currentTime || 0);
+  const [totalDuration, setTotalDuration] = useState(0);
+  const startTime = useRef<number>(0);
+  const localTimer = useRef<NodeJS.Timeout | null>(null);
   const lastUpdateTime = useRef(0);
   
   const handleVideoEnded = () => {
@@ -47,19 +50,54 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
     handleTimeUpdate
   );
   
-  // Sync local time with room state when room changes
-  useEffect(() => {
-    if (!room.isPlaying) {
-      setLocalCurrentTime(room.currentTime || 0);
+  // Parse duration string to seconds
+  const parseDurationToSeconds = (duration: string): number => {
+    const parts = duration.split(':').map(Number);
+    if (parts.length === 2) {
+      return parts[0] * 60 + parts[1]; // mm:ss
+    } else if (parts.length === 3) {
+      return parts[0] * 3600 + parts[1] * 60 + parts[2]; // hh:mm:ss
     }
-  }, [room.currentTime, room.isPlaying, room.currentTrack?.id]);
+    return 0;
+  };
 
-  // Update local time from YouTube player when playing
+  // Set total duration when track changes
   useEffect(() => {
-    if (room.isPlaying && currentTime > 0) {
-      setLocalCurrentTime(currentTime);
+    if (room.currentTrack?.duration) {
+      const seconds = parseDurationToSeconds(room.currentTrack.duration);
+      setTotalDuration(seconds);
     }
-  }, [currentTime, room.isPlaying]);
+  }, [room.currentTrack?.duration]);
+
+  // Local timer for progress tracking
+  useEffect(() => {
+    if (room.isPlaying && room.currentTrack) {
+      if (!startTime.current) {
+        startTime.current = Date.now() - (room.currentTime || 0) * 1000;
+      }
+      
+      localTimer.current = setInterval(() => {
+        const elapsed = (Date.now() - startTime.current) / 1000;
+        setLocalCurrentTime(Math.min(elapsed, totalDuration));
+      }, 100); // Update every 100ms for smooth animation
+    } else {
+      if (localTimer.current) {
+        clearInterval(localTimer.current);
+        localTimer.current = null;
+      }
+      startTime.current = 0;
+      if (!room.isPlaying) {
+        setLocalCurrentTime(room.currentTime || 0);
+      }
+    }
+
+    return () => {
+      if (localTimer.current) {
+        clearInterval(localTimer.current);
+        localTimer.current = null;
+      }
+    };
+  }, [room.isPlaying, room.currentTrack?.id, totalDuration]);
 
   const playPauseMutation = useMutation({
     mutationFn: async ({ action, currentTime }: { action: 'play' | 'pause'; currentTime: number }) => {
@@ -190,7 +228,7 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
                   <div className="mt-3 space-y-1">
                     <div className="flex items-center justify-between text-xs font-mono" style={{ color: '#000' }}>
                       <span className="font-bold">{formatTime(localCurrentTime)}</span>
-                      <span className="font-bold">{formatTime(player?.getDuration() || 0)}</span>
+                      <span className="font-bold">{room.currentTrack.duration}</span>
                     </div>
                     <div className="relative">
                       {/* Background track */}
@@ -198,15 +236,15 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
                       
                       {/* Filled progress bar */}
                       <div 
-                        className="absolute top-0 h-1 bg-black/30 rounded-full transition-all duration-1000 ease-linear" 
-                        style={{ width: `${Math.min((localCurrentTime / (player?.getDuration() || 1)) * 100, 100)}%` }}
+                        className="absolute top-0 h-1 bg-black/30 rounded-full transition-all duration-200 ease-linear" 
+                        style={{ width: `${totalDuration > 0 ? Math.min((localCurrentTime / totalDuration) * 100, 100) : 0}%` }}
                       ></div>
                       
                       {/* Moving progress dot */}
                       <div 
-                        className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-sm transition-all duration-500 ease-out"
+                        className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-sm transition-all duration-200 ease-out"
                         style={{ 
-                          left: `${Math.min((localCurrentTime / (player?.getDuration() || 1)) * 100, 100)}%`, 
+                          left: `${totalDuration > 0 ? Math.min((localCurrentTime / totalDuration) * 100, 100) : 0}%`, 
                           marginLeft: '-6px',
                           opacity: room.isPlaying ? 1 : 0.7
                         }}
