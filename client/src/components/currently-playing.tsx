@@ -130,6 +130,45 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
     },
   });
 
+  const previousTrackMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/rooms/${room.id}/previous`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms", room.id] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to go to previous track",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const restartTrackMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/rooms/${room.id}/sync`, {
+        currentTime: 0
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms", room.id] });
+      if (player && isPlayerReady) {
+        player.seekTo(0);
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to restart track",
+        variant: "destructive",
+      });
+    },
+  });
+
   const toggleAutoSelectionMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/rooms/${room.id}/toggle-auto-selection`);
@@ -197,6 +236,32 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
     if (room.queue.length > 0) {
       nextTrackMutation.mutate();
     }
+  };
+
+  const handlePrevious = () => {
+    // Restart current track from beginning (iPod-style behavior)
+    if (room.currentTrack) {
+      previousTrackMutation.mutate();
+    }
+  };
+
+  const handleMenu = () => {
+    toast({
+      title: "방 정보",
+      description: `방 코드: ${room.code} | 참가자: ${room.participants?.length || 0}명 | 대기열: ${room.queue.length}곡`,
+    });
+  };
+
+  const handleBottomButton = () => {
+    // Bottom button acts as a secondary control - show queue info
+    const queueInfo = room.queue.length > 0 
+      ? `다음 곡: ${room.queue[0]?.title}` 
+      : "대기열이 비어있습니다";
+    
+    toast({
+      title: "대기열 정보",
+      description: queueInfo,
+    });
   };
 
   const formatTime = (seconds: number): string => {
@@ -313,23 +378,48 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
             <div className="relative w-48 h-48 mx-auto">
               {/* Outer Ring */}
               <div className="absolute inset-0 bg-accent rounded-full shadow-inner border border-border">
-                {/* Touch Areas */}
-                <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-8 h-8 flex items-center justify-center">
+                {/* Touch Areas - Now Interactive */}
+                {/* MENU Button */}
+                <Button
+                  onClick={handleMenu}
+                  variant="ghost"
+                  className="absolute top-2 left-1/2 transform -translate-x-1/2 w-8 h-8 p-0 rounded-full hover:bg-primary/50 transition-colors duration-200"
+                >
                   <div className="text-xs font-bold text-text opacity-60">MENU</div>
-                </div>
-                <div className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center">
+                </Button>
+                
+                {/* Previous Track Button */}
+                <Button
+                  onClick={handlePrevious}
+                  disabled={!room.currentTrack || previousTrackMutation.isPending || restartTrackMutation.isPending || isLoading}
+                  variant="ghost"
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 p-0 rounded-full hover:bg-primary/50 transition-colors duration-200 disabled:opacity-30"
+                >
                   <SkipBack className="w-4 h-4 text-text opacity-60" />
-                </div>
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center">
+                </Button>
+                
+                {/* Next Track Button (moved from below) */}
+                <Button 
+                  onClick={handleNext}
+                  disabled={room.queue.length === 0 || nextTrackMutation.isPending || isLoading}
+                  variant="ghost"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 p-0 rounded-full hover:bg-primary/50 transition-colors duration-200 disabled:opacity-30"
+                >
                   <SkipForward className="w-4 h-4 text-text opacity-60" />
-                </div>
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-8 flex items-center justify-center">
+                </Button>
+                
+                {/* Bottom Button - Queue Info */}
+                <Button
+                  onClick={handleBottomButton}
+                  variant="ghost"
+                  className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-8 p-0 rounded-full hover:bg-primary/50 transition-colors duration-200"
+                >
                   {room.isPlaying ? (
                     <Pause className="w-4 h-4 text-text opacity-60" />
                   ) : (
                     <Play className="w-4 h-4 text-text opacity-60" />
                   )}
-                </div>
+                </Button>
               </div>
               
               {/* Center Button */}
@@ -352,15 +442,7 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
                 </Button>
               </div>
               
-              {/* Next Button */}
-              <Button 
-                onClick={handleNext}
-                disabled={room.queue.length === 0 || nextTrackMutation.isPending || isLoading}
-                variant="ghost"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 p-0 rounded-full hover:bg-primary/50 transition-colors duration-200 disabled:opacity-30"
-              >
-                <SkipForward className="w-4 h-4 text-text" />
-              </Button>
+              {/* Next Button moved to Touch Areas above */}
             </div>
           </div>
 

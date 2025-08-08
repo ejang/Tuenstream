@@ -343,7 +343,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to skip to next track" });
     }
-  })
+  });
+
+  app.post("/api/rooms/:roomId/previous", async (req, res) => {
+    try {
+      const room = await storage.getRoom(req.params.roomId);
+      if (!room) {
+        return res.status(404).json({ message: "Room not found" });
+      }
+
+      // Restart current track from beginning (iPod-style behavior)
+      if (room.currentTrack) {
+        await storage.updatePlaybackState(req.params.roomId, true, 0);
+        
+        const updatedRoom = await storage.getRoom(req.params.roomId);
+        broadcastToRoom(req.params.roomId, {
+          type: 'track_restarted',
+          data: updatedRoom
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to restart track" });
+    }
+  });
 
   // AI Auto-selection endpoints
   app.post("/api/rooms/:roomId/toggle-auto-selection", async (req, res) => {
