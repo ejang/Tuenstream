@@ -276,6 +276,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/rooms/:roomId/sync", async (req, res) => {
+    try {
+      const { currentTime } = req.body;
+      const success = await storage.updatePlaybackState(req.params.roomId, true, currentTime || 0);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Room not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to sync playback time" });
+    }
+  });
+
   app.post("/api/rooms/:roomId/next", async (req, res) => {
     try {
       const room = await storage.getRoom(req.params.roomId);

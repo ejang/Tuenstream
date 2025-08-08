@@ -7,10 +7,12 @@ declare global {
   }
 }
 
-export function useYouTubePlayer(videoId: string | null, onEnded?: () => void) {
+export function useYouTubePlayer(videoId: string | null, onEnded?: () => void, onTimeUpdate?: (currentTime: number) => void) {
   const [player, setPlayer] = useState<any>(null);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
   const playerInitialized = useRef(false);
+  const timeUpdateInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Load YouTube IFrame API if not already loaded
@@ -48,11 +50,41 @@ export function useYouTubePlayer(videoId: string | null, onEnded?: () => void) {
             if (event.data === 0 && onEnded) { // Video ended
               onEnded();
             }
+            
+            // Start/stop time tracking based on player state
+            if (event.data === 1) { // Playing
+              startTimeTracking();
+            } else { // Paused, ended, etc.
+              stopTimeTracking();
+            }
           },
         },
       });
       
       setPlayer(newPlayer);
+    };
+
+    const startTimeTracking = () => {
+      if (timeUpdateInterval.current) {
+        clearInterval(timeUpdateInterval.current);
+      }
+      
+      timeUpdateInterval.current = setInterval(() => {
+        if (player && isPlayerReady) {
+          const time = player.getCurrentTime();
+          setCurrentTime(time);
+          if (onTimeUpdate) {
+            onTimeUpdate(time);
+          }
+        }
+      }, 1000); // Update every second
+    };
+
+    const stopTimeTracking = () => {
+      if (timeUpdateInterval.current) {
+        clearInterval(timeUpdateInterval.current);
+        timeUpdateInterval.current = null;
+      }
     };
 
     if (window.YT?.Player) {
@@ -62,6 +94,7 @@ export function useYouTubePlayer(videoId: string | null, onEnded?: () => void) {
     }
 
     return () => {
+      stopTimeTracking();
       if (player) {
         player.destroy();
       }
@@ -74,5 +107,5 @@ export function useYouTubePlayer(videoId: string | null, onEnded?: () => void) {
     }
   }, [player, isPlayerReady, videoId]);
 
-  return { player, isPlayerReady };
+  return { player, isPlayerReady, currentTime };
 }

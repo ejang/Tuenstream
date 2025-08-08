@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useYouTubePlayer } from "@/hooks/use-youtube-player";
@@ -13,13 +14,44 @@ interface CurrentlyPlayingProps {
 
 export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
   const { toast } = useToast();
+  const [localCurrentTime, setLocalCurrentTime] = useState(room.currentTime || 0);
+  const lastUpdateTime = useRef(0);
   
   const handleVideoEnded = () => {
     // Automatically play next song when current song ends
     nextTrackMutation.mutate();
   };
   
-  const { player, isPlayerReady } = useYouTubePlayer(room.currentTrack?.youtubeId || null, handleVideoEnded);
+  const handleTimeUpdate = (currentTime: number) => {
+    setLocalCurrentTime(currentTime);
+    
+    // Update server every 5 seconds to avoid too many requests
+    const now = Date.now();
+    if (now - lastUpdateTime.current > 5000) {
+      lastUpdateTime.current = now;
+      // Update server with current playback time
+      if (room.isPlaying) {
+        fetch(`/api/rooms/${room.id}/sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentTime })
+        }).catch(console.error);
+      }
+    }
+  };
+  
+  const { player, isPlayerReady, currentTime } = useYouTubePlayer(
+    room.currentTrack?.youtubeId || null, 
+    handleVideoEnded,
+    handleTimeUpdate
+  );
+  
+  // Sync local time with room state when room changes
+  useEffect(() => {
+    if (!room.isPlaying) {
+      setLocalCurrentTime(room.currentTime || 0);
+    }
+  }, [room.currentTime, room.isPlaying, room.currentTrack?.id]);
 
   const playPauseMutation = useMutation({
     mutationFn: async ({ action, currentTime }: { action: 'play' | 'pause'; currentTime: number }) => {
@@ -105,12 +137,12 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
                   </div>
                   <div className="flex items-center space-x-2 mt-2">
                     <div className="text-xs font-mono text-text">
-                      {formatTime(room.currentTime)}
+                      {formatTime(localCurrentTime)}
                     </div>
                     <div className="flex-1 bg-border rounded-full h-1">
                       <div 
                         className="bg-text h-1 rounded-full transition-all duration-300" 
-                        style={{ width: `${Math.min((room.currentTime / (player?.getDuration() || 1)) * 100, 100)}%` }}
+                        style={{ width: `${Math.min((localCurrentTime / (player?.getDuration() || 1)) * 100, 100)}%` }}
                       ></div>
                     </div>
                     <div className="text-xs font-mono text-text">
