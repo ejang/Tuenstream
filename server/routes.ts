@@ -80,8 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Query parameter 'q' is required" });
       }
 
-      const apiKey = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
-      console.log('YouTube API Key available:', !!apiKey);
+      const apiKey = process.env.GOOGLE_API_KEY || process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
       
       if (!apiKey) {
         console.error('YouTube API key not configured');
@@ -89,16 +88,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(q)}&type=video&key=${apiKey}`;
-      console.log('Searching YouTube with query:', q);
       
       const searchResponse = await fetch(searchUrl);
       const searchData = await searchResponse.json();
-      
-      console.log('YouTube search response status:', searchResponse.status);
-      console.log('YouTube search response:', JSON.stringify(searchData, null, 2));
 
       if (!searchResponse.ok) {
-        console.error('YouTube API error:', searchData);
         if (searchData.error?.code === 403 && searchData.error?.errors?.[0]?.reason === 'quotaExceeded') {
           return res.status(503).json({ 
             message: "YouTube API 일일 할당량이 초과되었습니다. 내일 다시 시도해주세요.", 
@@ -109,7 +103,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!searchData.items || searchData.items.length === 0) {
-        console.log('No search results found');
         return res.json([]);
       }
 
@@ -131,7 +124,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      console.log('Returning', results.length, 'search results');
       res.json(results);
     } catch (error) {
       console.error('YouTube search error:', error);
@@ -403,7 +395,7 @@ async function addAISongsToQueue(roomId: string) {
     recentTracks,
   }, 2);
 
-  const apiKey = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
+  const apiKey = process.env.GOOGLE_API_KEY || process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
   if (!apiKey) return;
 
   // Search for each recommendation and add the first result
