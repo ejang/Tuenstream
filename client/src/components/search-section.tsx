@@ -18,6 +18,13 @@ export default function SearchSection({ roomId }: SearchSectionProps) {
 
   const { data: searchResults = [], isLoading: isSearching } = useQuery<YoutubeSearchResult[]>({
     queryKey: ["/api/youtube/search", searchQuery],
+    queryFn: async () => {
+      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(searchQuery)}`);
+      if (!response.ok) {
+        throw new Error('검색 실패');
+      }
+      return response.json();
+    },
     enabled: searchQuery.length > 2,
     staleTime: 60000, // Cache for 1 minute
   });
