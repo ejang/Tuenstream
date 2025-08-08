@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { insertRoomSchema, insertParticipantSchema, insertSongSchema } from "@shared/schema";
+import { getAIMusicRecommendations, shouldTriggerAutoSelection } from "./ai-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -310,9 +311,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updatedRoom = await storage.getRoom(req.params.roomId);
+      
+      // Check if we should trigger AI auto-selection
+      if (updatedRoom && await shouldTriggerAutoSelection(updatedRoom)) {
+        try {
+          await addAISongsToQueue(req.params.roomId);
+        } catch (error) {
+          console.error('AI auto-selection failed:', error);
+        }
+      }
+
+      const finalRoom = await storage.getRoom(req.params.roomId);
       broadcastToRoom(req.params.roomId, {
         type: 'track_changed',
-        data: updatedRoom
+        data: finalRoom
       });
 
       res.json({ success: true });
@@ -321,7 +333,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  // AI Auto-selection endpoints
+  app.post("/api/rooms/:roomId/toggle-auto-selection", async (req, res) => {
+    try {
+      const success = await storage.toggleAutoSelection(req.params.roomId);
+      if (!success) {
+        return res.status(404).json({ message: "Room not found" });
+      }
+
+      const room = await storage.getRoom(req.params.roomId);
+      broadcastToRoom(req.params.roomId, {
+        type: 'auto_selection_toggled',
+        data: room
+      });
+
+      res.json({ success: true, autoSelection: room?.autoSelection });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to toggle auto-selection" });
+    }
+  });
+
+  app.post("/api/rooms/:roomId/ai-recommend", async (req, res) => {
+    try {
+      await addAISongsToQueue(req.params.roomId);
+      
+      const room = await storage.getRoom(req.params.roomId);
+      broadcastToRoom(req.params.roomId, {
+        type: 'queue_updated',
+        data: room
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('AI recommendation error:', error);
+      res.status(500).json({ message: "Failed to get AI recommendations" });
+    }
+  });
+
   return httpServer;
+}
+
+async function addAISongsToQueue(roomId: string) {
+  const room = await storage.getRoom(roomId);
+  if (!room) return;
+
+  const recentTracks = await storage.getRecentTracks(roomId, 3);
+  const recommendations = await getAIMusicRecommendations({
+    currentTrack: room.currentTrack,
+    recentTracks,
+  }, 2);
+
+  const apiKey = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
+  if (!apiKey) return;
+
+  // Search for each recommendation and add the first result
+  for (const query of recommendations) {
+    try {
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`;
+      const searchResponse = await fetch(searchUrl);
+      const searchData = await searchResponse.json();
+
+      if (searchData.items && searchData.items.length > 0) {
+        const item = searchData.items[0];
+        
+        // Get video details for duration
+        const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${item.id.videoId}&key=${apiKey}`;
+        const detailsResponse = await fetch(videoDetailsUrl);
+        const detailsData = await detailsResponse.json();
+        
+        const duration = detailsData.items[0]?.contentDetails?.duration || 'PT0S';
+        const formattedDuration = formatDuration(duration);
+
+        const songData = {
+          youtubeId: item.id.videoId,
+          title: item.snippet.title,
+          artist: item.snippet.channelTitle,
+          duration: formattedDuration,
+          thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
+          requestedBy: "AI 🤖",
+        };
+
+        await storage.addSongToQueue(roomId, songData);
+      }
+    } catch (error) {
+      console.error('Error adding AI recommendation:', error);
+    }
+  }
 }
 
 function formatDuration(duration: string): string {

@@ -16,6 +16,9 @@ export interface IStorage {
   
   setCurrentTrack(roomId: string, song: Song | null): Promise<boolean>;
   updatePlaybackState(roomId: string, isPlaying: boolean, currentTime: number): Promise<boolean>;
+  
+  toggleAutoSelection(roomId: string): Promise<boolean>;
+  getRecentTracks(roomId: string, limit?: number): Promise<Song[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -43,6 +46,7 @@ export class MemStorage implements IStorage {
       participants: [],
       isPlaying: false,
       currentTime: 0,
+      autoSelection: false,
       createdAt: new Date(),
     };
     this.rooms.set(id, room);
@@ -182,6 +186,34 @@ export class MemStorage implements IStorage {
     
     this.rooms.set(roomId, updatedRoom);
     return true;
+  }
+
+  async toggleAutoSelection(roomId: string): Promise<boolean> {
+    const room = this.rooms.get(roomId);
+    if (!room) return false;
+
+    const updatedRoom = {
+      ...room,
+      autoSelection: !room.autoSelection,
+    };
+    
+    this.rooms.set(roomId, updatedRoom);
+    return true;
+  }
+
+  async getRecentTracks(roomId: string, limit: number = 5): Promise<Song[]> {
+    const room = this.rooms.get(roomId);
+    if (!room) return [];
+
+    // For in-memory storage, we'll maintain a simple recent tracks list
+    // In a real database, you'd query a separate played_tracks table
+    const recentTracks: Song[] = [];
+    
+    if (room.currentTrack) {
+      recentTracks.push(room.currentTrack);
+    }
+    
+    return recentTracks.slice(0, limit);
   }
 }
 

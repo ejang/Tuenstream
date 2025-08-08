@@ -5,7 +5,8 @@ import { useYouTubePlayer } from "@/hooks/use-youtube-player";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Pause, SkipForward, SkipBack } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Play, Pause, SkipForward, SkipBack, Bot, Zap } from "lucide-react";
 import type { Room } from "@shared/schema";
 
 interface CurrentlyPlayingProps {
@@ -79,6 +80,48 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
       toast({
         title: "Error",
         description: "Failed to skip to next track",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleAutoSelectionMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/rooms/${room.id}/toggle-auto-selection`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms", room.id] });
+      toast({
+        title: "AI 자동 선곡",
+        description: room.autoSelection ? "AI 자동 선곡이 비활성화되었습니다" : "AI 자동 선곡이 활성화되었습니다",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to toggle auto-selection",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const aiRecommendMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/rooms/${room.id}/ai-recommend`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms", room.id] });
+      toast({
+        title: "AI 추천",
+        description: "AI가 추천한 곡들이 플레이리스트에 추가되었습니다",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to get AI recommendations",
         variant: "destructive",
       });
     },
@@ -234,6 +277,39 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
               </div>
             </div>
           )}
+
+          {/* AI Controls */}
+          <div className="mt-4 p-4 bg-accent/20 rounded-lg border border-accent">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Bot className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-secondary">AI 자동 선곡</span>
+              </div>
+              <Switch
+                checked={room.autoSelection}
+                onCheckedChange={() => toggleAutoSelectionMutation.mutate()}
+                disabled={toggleAutoSelectionMutation.isPending}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                {room.autoSelection 
+                  ? "큐가 비어있을 때 AI가 자동으로 곡을 추천합니다" 
+                  : "AI 자동 선곡이 비활성화되어 있습니다"}
+              </span>
+              <Button
+                onClick={() => aiRecommendMutation.mutate()}
+                disabled={aiRecommendMutation.isPending}
+                variant="outline"
+                size="sm"
+                className="ml-2 h-7 px-2 text-xs"
+              >
+                <Zap className="w-3 h-3 mr-1" />
+                {aiRecommendMutation.isPending ? "추천 중..." : "지금 추천"}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </section>

@@ -27,6 +27,7 @@ export const roomSchema = z.object({
   participants: z.array(participantSchema),
   isPlaying: z.boolean(),
   currentTime: z.number(),
+  autoSelection: z.boolean().default(false),
   createdAt: z.date(),
 });
 
@@ -56,6 +57,7 @@ export const insertRoomSchema = roomSchema.omit({
   participants: true,
   isPlaying: true,
   currentTime: true,
+  autoSelection: true,
   createdAt: true,
 });
 
