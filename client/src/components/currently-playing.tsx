@@ -186,16 +186,23 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
                       <span className="font-bold">{room.currentTrack.duration}</span>
                     </div>
                     <div className="relative">
-                      <div className="w-full h-1 bg-black/20 rounded-full">
-                        <div 
-                          className="h-1 bg-black rounded-full transition-all duration-300" 
-                          style={{ width: `${Math.min((localCurrentTime / (player?.getDuration() || 1)) * 100, 100)}%` }}
-                        ></div>
-                      </div>
-                      {/* Progress indicator dot */}
+                      {/* Background track */}
+                      <div className="w-full h-1 bg-black/15 rounded-full"></div>
+                      
+                      {/* Filled progress bar */}
                       <div 
-                        className="absolute top-1/2 transform -translate-y-1/2 w-2 h-2 bg-black rounded-full transition-all duration-300"
-                        style={{ left: `${Math.min((localCurrentTime / (player?.getDuration() || 1)) * 100, 100)}%`, marginLeft: '-4px' }}
+                        className="absolute top-0 h-1 bg-black/30 rounded-full transition-all duration-1000 ease-linear" 
+                        style={{ width: `${Math.min((localCurrentTime / (player?.getDuration() || 1)) * 100, 100)}%` }}
+                      ></div>
+                      
+                      {/* Moving progress dot */}
+                      <div 
+                        className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-sm transition-all duration-1000 ease-linear"
+                        style={{ 
+                          left: `${Math.min((localCurrentTime / (player?.getDuration() || 1)) * 100, 100)}%`, 
+                          marginLeft: '-6px',
+                          opacity: room.isPlaying ? 1 : 0.7
+                        }}
                       ></div>
                     </div>
                   </div>
