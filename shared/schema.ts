@@ -22,6 +22,7 @@ export const participantSchema = z.object({
 export const roomSchema = z.object({
   id: z.string(),
   code: z.string(),
+  name: z.string(),
   currentTrack: songSchema.nullable(),
   queue: z.array(songSchema),
   participants: z.array(participantSchema),

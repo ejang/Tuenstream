@@ -20,6 +20,7 @@ export default function Home() {
   const { toast } = useToast();
   const [participantName, setParticipantName] = useState("");
   const [roomCode, setRoomCode] = useState("");
+  const [roomName, setRoomName] = useState("");
   const [isJoining, setIsJoining] = useState(false);
 
   const { data: room, isLoading } = useQuery<Room>({
@@ -35,8 +36,8 @@ export default function Home() {
   });
 
   const createRoomMutation = useMutation({
-    mutationFn: async ({ code, name }: { code: string; name: string }) => {
-      const response = await apiRequest("POST", "/api/rooms", { code });
+    mutationFn: async ({ code, name, roomName }: { code: string; name: string; roomName: string }) => {
+      const response = await apiRequest("POST", "/api/rooms", { code, name: roomName });
       const room = await response.json();
       
       // Add creator as participant
@@ -86,17 +87,18 @@ export default function Home() {
   });
 
   const handleCreateRoom = () => {
-    if (!roomCode.trim() || !participantName.trim()) {
+    if (!roomCode.trim() || !participantName.trim() || !roomName.trim()) {
       toast({
         title: "Error",
-        description: "Please enter both room code and your name",
+        description: "Please enter room code, room name, and your name",
         variant: "destructive",
       });
       return;
     }
     createRoomMutation.mutate({ 
       code: roomCode.trim().toUpperCase(), 
-      name: participantName.trim() 
+      name: participantName.trim(),
+      roomName: roomName.trim()
     });
   };
 
@@ -159,6 +161,12 @@ export default function Home() {
                   className="bg-input border-border rounded-xl h-12 font-mono text-sm placeholder:text-muted-foreground"
                 />
                 <Input
+                  placeholder="Room Name"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  className="bg-input border-border rounded-xl h-12 text-sm placeholder:text-muted-foreground"
+                />
+                <Input
                   placeholder="Your Name"
                   value={participantName}
                   onChange={(e) => setParticipantName(e.target.value)}
@@ -214,7 +222,10 @@ export default function Home() {
               <div className="w-7 h-7 bg-accent rounded-lg flex items-center justify-center">
                 <div className="w-3 h-3 bg-text rounded-full"></div>
               </div>
-              <h1 className="text-xl font-light text-foreground">iPod Music</h1>
+              <div>
+                <h1 className="text-xl font-light text-foreground">{room.name}</h1>
+                <div className="text-xs text-muted-foreground font-mono">{room.code}</div>
+              </div>
             </div>
 
             <div className="hidden md:flex items-center space-x-4 text-xs">
@@ -225,7 +236,7 @@ export default function Home() {
               <div className="w-px h-3 bg-border"></div>
               <div className="flex items-center space-x-1.5">
                 <div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div>
-                <span className="text-muted-foreground font-mono text-xs">{room.code}</span>
+                <span className="text-muted-foreground font-mono text-xs">Live</span>
               </div>
             </div>
 
