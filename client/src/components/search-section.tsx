@@ -68,75 +68,76 @@ export default function SearchSection({ roomId }: SearchSectionProps) {
   };
 
   return (
-    <section className="mb-12">
+    <section className="mb-10">
       <div className="max-w-2xl mx-auto">
-        <h2 className="text-xl font-medium text-secondary mb-6 text-center">Add Music to Queue</h2>
+        <h2 className="text-lg font-light text-foreground mb-5 text-center">Search Music</h2>
         
-        <Card className="bg-primary border border-accent minimal-shadow">
-          <CardContent className="p-6">
-            <form onSubmit={handleSearch} className="space-y-4">
+        <div className="bg-primary rounded-2xl shadow-lg border border-border overflow-hidden">
+          <div className="bg-secondary/20 px-3 py-1.5 text-center border-b border-border">
+            <div className="text-xs font-mono text-muted-foreground">YouTube Music Search</div>
+          </div>
+          <div className="p-4">
+            <form onSubmit={handleSearch} className="space-y-3">
               <div className="relative">
                 <Input
                   type="text"
-                  placeholder="Search for songs on YouTube..."
+                  placeholder="Artist, song, album..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 pr-12 border border-accent rounded-md text-secondary bg-primary input-focus focus:outline-none focus:border-highlight transition-all duration-200"
+                  className="w-full px-3 py-2.5 pr-11 bg-input border-border rounded-lg text-foreground text-sm focus:ring-2 focus:ring-text/20 focus:border-text transition-all duration-200"
                 />
                 <Button 
                   type="submit" 
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-secondary text-primary rounded-md hover:bg-text transition-colors duration-200"
+                  className="absolute right-1.5 top-1/2 transform -translate-y-1/2 p-1.5 bg-accent hover:bg-secondary text-foreground rounded-md transition-colors duration-200"
                 >
-                  <Search className="w-4 h-4" />
+                  <Search className="w-3 h-3" />
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {isSearching && (
-          <div className="mt-6 text-center">
-            <div className="inline-flex items-center space-x-2 text-text">
-              <div className="w-4 h-4 border border-accent border-t-secondary rounded-full animate-spin"></div>
-              <span>Searching...</span>
+          <div className="mt-4 text-center">
+            <div className="inline-flex items-center space-x-2 text-muted-foreground">
+              <div className="w-3 h-3 border border-border border-t-text rounded-full animate-spin"></div>
+              <span className="text-xs font-mono">Searching...</span>
             </div>
           </div>
         )}
 
         {searchResults.length > 0 && (
-          <div className="mt-6 space-y-3 fade-in">
+          <div className="mt-4 space-y-2 fade-in">
             {searchResults.map((result) => (
-              <Card key={result.id} className="bg-primary border border-accent minimal-shadow hover:border-text transition-colors duration-200">
-                <CardContent className="p-0">
-                  <div className="flex items-center p-4">
-                    <img 
-                      src={result.thumbnail} 
-                      alt="Song thumbnail" 
-                      className="w-20 h-15 object-cover rounded-md"
-                    />
-                    <div className="ml-4 flex-1 min-w-0">
-                      <h3 className="font-medium text-secondary truncate">{result.title}</h3>
-                      <p className="text-sm text-text truncate">{result.artist}</p>
-                      <p className="text-xs text-text mt-1">{result.duration}</p>
-                    </div>
-                    <Button 
-                      onClick={() => handleAddToQueue(result)}
-                      disabled={addToQueueMutation.isPending}
-                      className="ml-4 px-6 py-2 bg-highlight text-primary rounded-md hover:bg-orange-600 transition-colors duration-200 font-medium"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add
-                    </Button>
+              <div key={result.id} className="bg-primary border border-border rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+                <div className="flex items-center p-3">
+                  <img 
+                    src={result.thumbnail} 
+                    alt="Song thumbnail" 
+                    className="w-12 h-9 object-cover rounded border border-border"
+                  />
+                  <div className="ml-3 flex-1 min-w-0">
+                    <h3 className="font-medium text-foreground text-sm truncate leading-tight">{result.title}</h3>
+                    <p className="text-xs text-muted-foreground truncate">{result.artist}</p>
+                    <p className="text-xs text-muted-foreground font-mono mt-0.5">{result.duration}</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <Button 
+                    onClick={() => handleAddToQueue(result)}
+                    disabled={addToQueueMutation.isPending}
+                    className="ml-3 px-3 py-1.5 bg-text text-primary rounded-md hover:bg-foreground transition-colors duration-200 text-xs font-medium"
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         )}
 
         {searchQuery.length > 2 && !isSearching && searchResults.length === 0 && (
-          <div className="mt-6 text-center">
-            <p className="text-text">No results found for "{searchQuery}"</p>
+          <div className="mt-4 text-center">
+            <p className="text-muted-foreground text-xs font-mono">No results for "{searchQuery}"</p>
           </div>
         )}
       </div>

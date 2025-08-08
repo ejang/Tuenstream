@@ -4,28 +4,28 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(0, 0%, 100%);
-  --foreground: hsl(0, 0%, 20%);
+  --background: hsl(0, 0%, 96%);
+  --foreground: hsl(0, 0%, 15%);
   --card: hsl(0, 0%, 98%);
-  --card-foreground: hsl(0, 0%, 20%);
+  --card-foreground: hsl(0, 0%, 15%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(0, 0%, 20%);
-  --primary: hsl(0, 0%, 100%);
-  --primary-foreground: hsl(0, 0%, 0%);
-  --secondary: hsl(0, 0%, 0%);
-  --secondary-foreground: hsl(0, 0%, 100%);
-  --muted: hsl(0, 0%, 89.8%);
-  --muted-foreground: hsl(0, 0%, 20%);
-  --accent: hsl(0, 0%, 89.8%);
-  --accent-foreground: hsl(0, 0%, 20%);
+  --popover-foreground: hsl(0, 0%, 15%);
+  --primary: hsl(0, 0%, 98%);
+  --primary-foreground: hsl(0, 0%, 15%);
+  --secondary: hsl(0, 0%, 85%);
+  --secondary-foreground: hsl(0, 0%, 15%);
+  --muted: hsl(0, 0%, 92%);
+  --muted-foreground: hsl(0, 0%, 35%);
+  --accent: hsl(0, 0%, 88%);
+  --accent-foreground: hsl(0, 0%, 15%);
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(0, 0%, 100%);
-  --border: hsl(0, 0%, 89.8%);
-  --input: hsl(0, 0%, 89.8%);
-  --ring: hsl(16, 100%, 60%);
-  --highlight: hsl(16, 100%, 60%);
-  --text: hsl(0, 0%, 20%);
-  --radius: 0.5rem;
+  --border: hsl(0, 0%, 82%);
+  --input: hsl(0, 0%, 94%);
+  --ring: hsl(210, 12%, 45%);
+  --highlight: hsl(210, 12%, 45%);
+  --text: hsl(0, 0%, 35%);
+  --radius: 0.75rem;
   --font-sans: 'Inter', 'Helvetica Neue', 'Arial', sans-serif;
 }
 

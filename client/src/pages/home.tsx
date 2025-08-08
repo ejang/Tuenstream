@@ -99,59 +99,64 @@ export default function Home() {
       <div className="min-h-screen bg-primary flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <div className="flex items-center justify-center space-x-4 mb-6">
-              <div className="w-12 h-12 bg-secondary rounded-sm flex items-center justify-center">
-                <div className="w-6 h-6 bg-primary rounded-sm"></div>
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <div className="w-16 h-16 bg-primary rounded-2xl shadow-lg border border-border flex items-center justify-center">
+                <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
+                  <div className="w-3 h-3 bg-text rounded-full"></div>
+                </div>
               </div>
-              <h1 className="text-4xl font-medium text-secondary">Collective</h1>
+              <h1 className="text-3xl font-light text-foreground">iPod Music</h1>
             </div>
-            <p className="text-text mb-8">Collaborative YouTube music requests with real-time playlist sharing</p>
+            <p className="text-muted-foreground mb-8 text-sm">Collaborative music experience • Share and enjoy together</p>
           </div>
 
-          <Card className="minimal-shadow">
-            <CardContent className="p-6 space-y-6">
+          <div className="bg-primary rounded-2xl shadow-lg border border-border overflow-hidden">
+            <div className="bg-secondary/20 px-4 py-2 text-center border-b border-border">
+              <div className="text-xs font-mono text-muted-foreground">iPod Music</div>
+            </div>
+            <div className="p-6 space-y-5">
               <Button
                 onClick={handleCreateRoom}
                 disabled={createRoomMutation.isPending}
-                className="w-full bg-secondary text-primary hover:bg-text h-12 text-lg font-medium"
+                className="w-full bg-accent hover:bg-secondary text-foreground h-11 rounded-lg font-medium shadow-sm border border-border"
               >
-                <Radio className="w-5 h-5 mr-3" />
-                Create New Room
+                <Radio className="w-4 h-4 mr-2" />
+                Create Room
               </Button>
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-accent"></div>
+                  <div className="w-full border-t border-border"></div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-primary px-4 text-text">or</span>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-primary px-3 text-muted-foreground font-mono">or join existing</span>
                 </div>
               </div>
 
-              <form onSubmit={handleJoinRoom} className="space-y-4">
+              <form onSubmit={handleJoinRoom} className="space-y-3">
                 <Input
-                  placeholder="Enter room code"
+                  placeholder="Room Code"
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value)}
-                  className="input-focus"
+                  className="bg-input border-border rounded-lg h-10 font-mono text-sm"
                 />
                 <Input
-                  placeholder="Your name"
+                  placeholder="Your Name"
                   value={participantName}
                   onChange={(e) => setParticipantName(e.target.value)}
-                  className="input-focus"
+                  className="bg-input border-border rounded-lg h-10 text-sm"
                 />
                 <Button
                   type="submit"
                   disabled={joinRoomMutation.isPending}
-                  className="w-full bg-highlight text-primary hover:bg-orange-600 h-12 font-medium"
+                  className="w-full bg-text hover:bg-foreground text-primary h-11 rounded-lg font-medium shadow-sm"
                 >
-                  <Users className="w-5 h-5 mr-3" />
+                  <Users className="w-4 h-4 mr-2" />
                   Join Room
                 </Button>
               </form>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -184,30 +189,30 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-primary">
       {/* Header */}
-      <header className="border-b border-accent bg-primary">
+      <header className="border-b border-border bg-primary shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 bg-secondary rounded-sm flex items-center justify-center">
-                <div className="w-4 h-4 bg-primary rounded-sm"></div>
+          <div className="flex items-center justify-between h-14">
+            <div className="flex items-center space-x-3">
+              <div className="w-7 h-7 bg-accent rounded-lg flex items-center justify-center">
+                <div className="w-3 h-3 bg-text rounded-full"></div>
               </div>
-              <h1 className="text-2xl font-medium text-secondary">Collective</h1>
+              <h1 className="text-xl font-light text-foreground">iPod Music</h1>
             </div>
 
-            <div className="hidden md:flex items-center space-x-6 text-sm text-text">
-              <div className="flex items-center space-x-2">
-                <Users className="w-4 h-4" />
-                <span>{room.participants.length} participants</span>
+            <div className="hidden md:flex items-center space-x-4 text-xs">
+              <div className="flex items-center space-x-1.5 bg-secondary/30 px-2 py-1 rounded">
+                <Users className="w-3 h-3 text-muted-foreground" />
+                <span className="text-muted-foreground font-mono">{room.participants.length}</span>
               </div>
-              <div className="w-px h-4 bg-accent"></div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Room: <span className="font-medium">{room.code}</span></span>
+              <div className="w-px h-3 bg-border"></div>
+              <div className="flex items-center space-x-1.5">
+                <div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div>
+                <span className="text-muted-foreground font-mono text-xs">{room.code}</span>
               </div>
             </div>
 
-            <button className="md:hidden p-2 text-text hover:text-secondary transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>

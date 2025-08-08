@@ -78,55 +78,58 @@ export default function PlaylistQueue({ room }: PlaylistQueueProps) {
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-medium text-secondary">Queue</h2>
-        <div className="text-sm text-text">
-          <span>{room.queue.length} songs</span>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-light text-foreground">Up Next</h2>
+        <div className="text-xs font-mono text-muted-foreground bg-secondary/30 px-2 py-1 rounded">
+          {room.queue.length}
         </div>
       </div>
 
-      <Card className="bg-primary border border-accent minimal-shadow">
-        <CardContent className="p-0">
+      <div className="bg-primary rounded-2xl shadow-lg border border-border overflow-hidden">
+        <div className="bg-secondary/20 px-3 py-1.5 text-center border-b border-border">
+          <div className="text-xs font-mono text-muted-foreground">Playlist Queue</div>
+        </div>
+        <div className="p-0">
           {room.queue.length === 0 ? (
-            <div className="p-8 text-center text-text">
-              <div className="w-12 h-12 border-2 border-accent rounded-full flex items-center justify-center mx-auto mb-4">
-                <Play className="w-6 h-6" />
+            <div className="p-6 text-center">
+              <div className="w-10 h-10 border border-border rounded-full flex items-center justify-center mx-auto mb-3 bg-accent">
+                <Play className="w-4 h-4 text-muted-foreground" />
               </div>
-              <p className="font-medium">Queue is empty</p>
-              <p className="text-sm mt-1">Search and add songs to get started</p>
+              <p className="font-medium text-foreground text-sm">Queue Empty</p>
+              <p className="text-xs text-muted-foreground mt-1">Add songs to start playing</p>
             </div>
           ) : (
             <>
-              <div className="max-h-96 overflow-y-auto">
+              <div className="max-h-80 overflow-y-auto">
                 {room.queue.map((song, index) => (
                   <div 
                     key={song.id} 
-                    className="flex items-center p-4 border-b border-accent last:border-b-0 hover:bg-gray-50 transition-colors duration-200 group"
+                    className="flex items-center p-3 border-b border-border last:border-b-0 hover:bg-secondary/10 transition-colors duration-200 group"
                   >
-                    <div className="w-8 text-center">
+                    <div className="w-6 text-center">
                       {index === 0 ? (
-                        <div className="w-6 h-6 bg-highlight text-primary text-xs font-medium rounded-full flex items-center justify-center">
-                          <Play className="w-3 h-3" />
+                        <div className="w-4 h-4 bg-text text-primary text-xs font-bold rounded-full flex items-center justify-center">
+                          <Play className="w-2 h-2" />
                         </div>
                       ) : (
-                        <span className="text-sm text-text font-medium">{index + 1}</span>
+                        <span className="text-xs text-muted-foreground font-mono">{index + 1}</span>
                       )}
                     </div>
-                    <div className="ml-3 flex-1 min-w-0">
-                      <p className="font-medium text-secondary text-sm truncate">{song.title}</p>
-                      <p className="text-xs text-text truncate">{song.artist}</p>
-                      <p className="text-xs text-text mt-1">Added by <span className="font-medium">{song.requestedBy}</span></p>
+                    <div className="ml-2 flex-1 min-w-0">
+                      <p className="font-medium text-foreground text-xs truncate leading-tight">{song.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{song.artist}</p>
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5">{song.requestedBy}</p>
                     </div>
                     <div className="ml-2 flex items-center space-x-2">
-                      <span className="text-xs text-text">{song.duration}</span>
+                      <span className="text-xs text-muted-foreground font-mono">{song.duration}</span>
                       <Button
                         onClick={() => handleRemoveSong(song.id)}
                         disabled={removeSongMutation.isPending}
                         variant="ghost"
                         size="sm"
-                        className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100 text-text hover:text-destructive transition-all"
+                        className="w-5 h-5 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all rounded"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-2.5 h-2.5" />
                       </Button>
                     </div>
                   </div>
@@ -134,26 +137,26 @@ export default function PlaylistQueue({ room }: PlaylistQueueProps) {
               </div>
 
               {/* Queue Controls */}
-              <div className="border-t border-accent p-4">
-                <div className="flex items-center justify-between text-sm">
+              <div className="border-t border-border p-3 bg-secondary/10">
+                <div className="flex items-center justify-between text-xs">
                   <Button
                     onClick={handleClearQueue}
                     disabled={clearQueueMutation.isPending}
                     variant="ghost"
                     size="sm"
-                    className="text-text hover:text-secondary transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1 h-auto font-mono"
                   >
-                    Clear queue
+                    Clear All
                   </Button>
-                  <div className="text-text">
-                    Total: <span className="font-medium">{calculateTotalDuration()}</span>
+                  <div className="text-muted-foreground font-mono">
+                    Total: {calculateTotalDuration()}
                   </div>
                 </div>
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </section>
   );
 }
