@@ -44,7 +44,7 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
     }
   };
   
-  const { player, isPlayerReady, currentTime, needsUserInteraction, isMobile } = useYouTubePlayer(
+  const { player, isPlayerReady, currentTime, needsUserInteraction, isMobile, isLoading, playerState } = useYouTubePlayer(
     room.currentTrack?.youtubeId || null, 
     handleVideoEnded,
     handleTimeUpdate
@@ -71,7 +71,7 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
 
   // Local timer for progress tracking
   useEffect(() => {
-    if (room.isPlaying && room.currentTrack) {
+    if (room.isPlaying && room.currentTrack && !isLoading) {
       if (!startTime.current) {
         startTime.current = Date.now() - (room.currentTime || 0) * 1000;
       }
@@ -86,7 +86,7 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
         localTimer.current = null;
       }
       startTime.current = 0;
-      if (!room.isPlaying) {
+      if (!room.isPlaying || isLoading) {
         setLocalCurrentTime(room.currentTime || 0);
       }
     }
@@ -97,7 +97,7 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
         localTimer.current = null;
       }
     };
-  }, [room.isPlaying, room.currentTrack?.id, totalDuration]);
+  }, [room.isPlaying, room.currentTrack?.id, totalDuration, isLoading]);
 
   const playPauseMutation = useMutation({
     mutationFn: async ({ action, currentTime }: { action: 'play' | 'pause'; currentTime: number }) => {
@@ -243,38 +243,61 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
                     {room.currentTrack.artist}
                   </div>
                   
-                  {/* Time and Progress Bar - iPod Style */}
-                  <div className="mt-3 space-y-1">
-                    <div className="flex items-center justify-between text-xs font-mono" style={{ color: '#000' }}>
-                      <span className="font-bold">{formatTime(localCurrentTime)}</span>
-                      <span className="font-bold">{room.currentTrack.duration}</span>
+                  {/* Loading State */}
+                  {isLoading ? (
+                    <div className="mt-3 space-y-2">
+                      <div className="text-center">
+                        <div className="text-xs font-mono opacity-75 animate-pulse">
+                          {!isPlayerReady ? '로딩 중...' : 
+                           playerState === 3 ? '버퍼링 중...' : 
+                           '음악 준비 중...'}
+                        </div>
+                      </div>
+                      <div className="relative">
+                        {/* Loading progress bar */}
+                        <div className="w-full h-1 bg-black/15 rounded-full"></div>
+                        <div className="absolute top-0 h-1 bg-black/30 rounded-full animate-pulse" style={{ width: '30%' }}></div>
+                      </div>
                     </div>
-                    <div className="relative">
-                      {/* Background track */}
-                      <div className="w-full h-1 bg-black/15 rounded-full"></div>
-                      
-                      {/* Filled progress bar */}
-                      <div 
-                        className="absolute top-0 h-1 bg-black/30 rounded-full transition-all duration-200 ease-linear" 
-                        style={{ width: `${totalDuration > 0 ? Math.min((localCurrentTime / totalDuration) * 100, 100) : 0}%` }}
-                      ></div>
-                      
-                      {/* Moving progress dot */}
-                      <div 
-                        className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-sm transition-all duration-200 ease-out"
-                        style={{ 
-                          left: `${totalDuration > 0 ? Math.min((localCurrentTime / totalDuration) * 100, 100) : 0}%`, 
-                          marginLeft: '-6px',
-                          opacity: room.isPlaying ? 1 : 0.7
-                        }}
-                      ></div>
+                  ) : (
+                    /* Time and Progress Bar - iPod Style */
+                    <div className="mt-3 space-y-1">
+                      <div className="flex items-center justify-between text-xs font-mono" style={{ color: '#000' }}>
+                        <span className="font-bold">{formatTime(localCurrentTime)}</span>
+                        <span className="font-bold">{room.currentTrack.duration}</span>
+                      </div>
+                      <div className="relative">
+                        {/* Background track */}
+                        <div className="w-full h-1 bg-black/15 rounded-full"></div>
+                        
+                        {/* Filled progress bar */}
+                        <div 
+                          className="absolute top-0 h-1 bg-black/30 rounded-full transition-all duration-200 ease-linear" 
+                          style={{ width: `${totalDuration > 0 ? Math.min((localCurrentTime / totalDuration) * 100, 100) : 0}%` }}
+                        ></div>
+                        
+                        {/* Moving progress dot */}
+                        <div 
+                          className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-sm transition-all duration-200 ease-out"
+                          style={{ 
+                            left: `${totalDuration > 0 ? Math.min((localCurrentTime / totalDuration) * 100, 100) : 0}%`, 
+                            marginLeft: '-6px',
+                            opacity: room.isPlaying ? 1 : 0.7
+                          }}
+                        ></div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   
                   {/* Playback Status */}
                   <div className="text-center mt-2">
                     <div className="text-xs font-mono opacity-75">
-                      {room.isPlaying ? '▶ PLAYING' : '⏸ PAUSED'}
+                      {isLoading ? 
+                        (!isPlayerReady ? '로딩 중...' : 
+                         playerState === 3 ? '버퍼링 중...' : 
+                         '준비 중...') :
+                        (room.isPlaying ? '▶ PLAYING' : '⏸ PAUSED')
+                      }
                     </div>
                   </div>
                 </div>
@@ -313,11 +336,15 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-primary rounded-full shadow-lg border border-border flex items-center justify-center">
                 <Button 
                   onClick={handlePlayPause}
-                  disabled={!room.currentTrack || !isPlayerReady || playPauseMutation.isPending}
+                  disabled={!room.currentTrack || !isPlayerReady || playPauseMutation.isPending || isLoading}
                   variant="ghost"
                   className="w-full h-full rounded-full hover:bg-secondary/50 transition-colors duration-200"
                 >
-                  {room.isPlaying ? (
+                  {isLoading ? (
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <div className="w-3 h-3 border-2 border-text border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : room.isPlaying ? (
                     <Pause className="w-6 h-6 text-text" />
                   ) : (
                     <Play className="w-6 h-6 text-text" />
@@ -328,7 +355,7 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
               {/* Next Button */}
               <Button 
                 onClick={handleNext}
-                disabled={room.queue.length === 0 || nextTrackMutation.isPending}
+                disabled={room.queue.length === 0 || nextTrackMutation.isPending || isLoading}
                 variant="ghost"
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 p-0 rounded-full hover:bg-primary/50 transition-colors duration-200 disabled:opacity-30"
               >
@@ -343,7 +370,12 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Requested by {room.currentTrack.requestedBy}</span>
                 <span className="font-mono">
-                  {room.isPlaying ? '▶ PLAYING' : '⏸ PAUSED'}
+                  {isLoading ? 
+                    (!isPlayerReady ? '로딩 중...' : 
+                     playerState === 3 ? '버퍼링 중...' : 
+                     '준비 중...') :
+                    (room.isPlaying ? '▶ PLAYING' : '⏸ PAUSED')
+                  }
                 </span>
               </div>
             </div>

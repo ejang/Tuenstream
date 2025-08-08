@@ -12,6 +12,8 @@ export function useYouTubePlayer(videoId: string | null, onEnded?: () => void, o
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [playerState, setPlayerState] = useState(-1); // YouTube player state
   const playerInitialized = useRef(false);
   const timeUpdateInterval = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useRef(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
@@ -47,9 +49,19 @@ export function useYouTubePlayer(videoId: string | null, onEnded?: () => void, o
         events: {
           onReady: () => {
             setIsPlayerReady(true);
+            setIsLoading(false);
           },
           onStateChange: (event: any) => {
             // YouTube Player States: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued)
+            setPlayerState(event.data);
+            
+            // Update loading state based on player state
+            if (event.data === 3) { // Buffering
+              setIsLoading(true);
+            } else if (event.data === 1 || event.data === 2) { // Playing or Paused
+              setIsLoading(false);
+            }
+            
             if (event.data === 0 && onEnded) { // Video ended
               onEnded();
             }
@@ -119,9 +131,10 @@ export function useYouTubePlayer(videoId: string | null, onEnded?: () => void, o
 
   useEffect(() => {
     if (player && isPlayerReady && videoId) {
+      setIsLoading(true); // Show loading when switching videos
       player.loadVideoById(videoId);
     }
   }, [player, isPlayerReady, videoId]);
 
-  return { player, isPlayerReady, currentTime, needsUserInteraction, isMobile: isMobile.current };
+  return { player, isPlayerReady, currentTime, needsUserInteraction, isMobile: isMobile.current, isLoading, playerState };
 }
