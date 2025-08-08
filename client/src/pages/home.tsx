@@ -35,10 +35,18 @@ export default function Home() {
   });
 
   const createRoomMutation = useMutation({
-    mutationFn: async () => {
-      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    mutationFn: async ({ code, name }: { code: string; name: string }) => {
       const response = await apiRequest("POST", "/api/rooms", { code });
-      return response.json();
+      const room = await response.json();
+      
+      // Add creator as participant
+      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      await apiRequest("POST", `/api/rooms/${room.id}/participants`, {
+        name,
+        initials,
+      });
+      
+      return room;
     },
     onSuccess: (room: Room) => {
       setLocation(`/room/${room.id}`);
@@ -46,7 +54,7 @@ export default function Home() {
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to create room",
+        description: "Failed to create room. Room code might already exist.",
         variant: "destructive",
       });
     },
@@ -78,11 +86,21 @@ export default function Home() {
   });
 
   const handleCreateRoom = () => {
-    createRoomMutation.mutate();
+    if (!roomCode.trim() || !participantName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter both room code and your name",
+        variant: "destructive",
+      });
+      return;
+    }
+    createRoomMutation.mutate({ 
+      code: roomCode.trim().toUpperCase(), 
+      name: participantName.trim() 
+    });
   };
 
-  const handleJoinRoom = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleJoinRoom = () => {
     if (!roomCode.trim() || !participantName.trim()) {
       toast({
         title: "Error",
@@ -118,7 +136,7 @@ export default function Home() {
               <Button
                 onClick={handleCreateRoom}
                 disabled={createRoomMutation.isPending}
-                className="w-full bg-accent hover:bg-secondary text-foreground h-11 rounded-lg font-medium shadow-sm border border-border"
+                className="w-full bg-accent hover:bg-secondary text-foreground h-12 rounded-xl font-medium shadow-sm border border-border"
               >
                 <Radio className="w-4 h-4 mr-2" />
                 Create Room
@@ -133,28 +151,28 @@ export default function Home() {
                 </div>
               </div>
 
-              <form onSubmit={handleJoinRoom} className="space-y-3">
+              <div className="space-y-3">
                 <Input
                   placeholder="Room Code"
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value)}
-                  className="bg-input border-border rounded-lg h-10 font-mono text-sm"
+                  className="bg-input border-border rounded-xl h-12 font-mono text-sm placeholder:text-muted-foreground"
                 />
                 <Input
                   placeholder="Your Name"
                   value={participantName}
                   onChange={(e) => setParticipantName(e.target.value)}
-                  className="bg-input border-border rounded-lg h-10 text-sm"
+                  className="bg-input border-border rounded-xl h-12 text-sm placeholder:text-muted-foreground"
                 />
                 <Button
-                  type="submit"
+                  onClick={handleJoinRoom}
                   disabled={joinRoomMutation.isPending}
-                  className="w-full bg-text hover:bg-foreground text-primary h-11 rounded-lg font-medium shadow-sm"
+                  className="w-full bg-text hover:bg-foreground text-primary h-12 rounded-xl font-medium shadow-sm"
                 >
                   <Users className="w-4 h-4 mr-2" />
                   Join Room
                 </Button>
-              </form>
+              </div>
             </div>
           </div>
         </div>
