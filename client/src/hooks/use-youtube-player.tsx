@@ -11,8 +11,10 @@ export function useYouTubePlayer(videoId: string | null, onEnded?: () => void, o
   const [player, setPlayer] = useState<any>(null);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
   const playerInitialized = useRef(false);
   const timeUpdateInterval = useRef<NodeJS.Timeout | null>(null);
+  const isMobile = useRef(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
 
   useEffect(() => {
     // Load YouTube IFrame API if not already loaded
@@ -34,12 +36,13 @@ export function useYouTubePlayer(videoId: string | null, onEnded?: () => void, o
         videoId: videoId || '',
         playerVars: {
           autoplay: 0,
-          controls: 0,
+          controls: isMobile.current ? 1 : 0,
           disablekb: 1,
           fs: 0,
           modestbranding: 1,
           rel: 0,
           showinfo: 0,
+          playsinline: 1,
         },
         events: {
           onReady: () => {
@@ -49,6 +52,13 @@ export function useYouTubePlayer(videoId: string | null, onEnded?: () => void, o
             // YouTube Player States: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued)
             if (event.data === 0 && onEnded) { // Video ended
               onEnded();
+            }
+            
+            // Check if user interaction is needed (mobile autoplay blocked)
+            if (event.data === -1 && isMobile.current) {
+              setNeedsUserInteraction(true);
+            } else if (event.data === 1) {
+              setNeedsUserInteraction(false);
             }
             
             // Start/stop time tracking based on player state
@@ -113,5 +123,5 @@ export function useYouTubePlayer(videoId: string | null, onEnded?: () => void, o
     }
   }, [player, isPlayerReady, videoId]);
 
-  return { player, isPlayerReady, currentTime };
+  return { player, isPlayerReady, currentTime, needsUserInteraction, isMobile: isMobile.current };
 }

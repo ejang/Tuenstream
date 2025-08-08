@@ -44,7 +44,7 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
     }
   };
   
-  const { player, isPlayerReady, currentTime } = useYouTubePlayer(
+  const { player, isPlayerReady, currentTime, needsUserInteraction, isMobile } = useYouTubePlayer(
     room.currentTrack?.youtubeId || null, 
     handleVideoEnded,
     handleTimeUpdate
@@ -180,6 +180,14 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
       player.pauseVideo();
       playPauseMutation.mutate({ action: 'pause', currentTime });
     } else {
+      // On mobile, show notice if user interaction needed
+      if (isMobile && needsUserInteraction) {
+        toast({
+          title: "모바일 재생 안내",
+          description: "YouTube 플레이어를 직접 터치해서 재생해주세요",
+        });
+        return;
+      }
       player.playVideo();
       playPauseMutation.mutate({ action: 'play', currentTime });
     }
@@ -205,8 +213,19 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
         <CardContent className="p-0">
           {/* iPod Design */}
           <div className="bg-primary rounded-2xl p-6 shadow-2xl border border-border">
-            {/* Hidden YouTube Player */}
-            <div id="youtube-player" className="hidden"></div>
+            {/* YouTube Player - visible on mobile for user interaction */}
+            <div 
+              id="youtube-player" 
+              className={isMobile ? "w-full h-40 mb-4 rounded-lg overflow-hidden" : "hidden"}
+            ></div>
+            
+            {/* Mobile interaction notice */}
+            {isMobile && needsUserInteraction && room.currentTrack && (
+              <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg text-center">
+                <p className="text-sm text-blue-300 mb-2">📱 모바일에서 음악을 들으려면</p>
+                <p className="text-xs text-blue-200">위의 YouTube 플레이어를 터치해서 재생해주세요</p>
+              </div>
+            )}
             
             {/* LCD Screen */}
             <div className="bg-secondary rounded-lg p-3 mb-6 shadow-inner border border-accent" style={{ backgroundColor: '#a8b4a8', color: '#000' }}>
