@@ -8,9 +8,13 @@ interface WebSocketMessage {
 export function useWebSocket(roomId: string | null, onMessage: (message: WebSocketMessage) => void) {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
+  const onMessageRef = useRef(onMessage);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
+
+  // Keep onMessage ref current
+  onMessageRef.current = onMessage;
 
   useEffect(() => {
     if (!roomId) return;
@@ -33,17 +37,21 @@ export function useWebSocket(roomId: string | null, onMessage: (message: WebSock
           reconnectAttempts.current = 0; // Reset on successful connection
           console.log('WebSocket connected');
           
-          // Join the room
-          wsRef.current?.send(JSON.stringify({
-            type: 'join_room',
-            roomId: roomId
-          }));
+          // Join the room with a small delay to ensure connection is ready
+          setTimeout(() => {
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+              wsRef.current.send(JSON.stringify({
+                type: 'join_room',
+                roomId: roomId
+              }));
+            }
+          }, 100);
         };
 
         wsRef.current.onmessage = (event) => {
           try {
             const message = JSON.parse(event.data);
-            onMessage(message);
+            onMessageRef.current(message);
           } catch (error) {
             console.error('Failed to parse WebSocket message:', error);
           }
@@ -85,7 +93,7 @@ export function useWebSocket(roomId: string | null, onMessage: (message: WebSock
         wsRef.current.close(1000, 'Component unmounting');
       }
     };
-  }, [roomId, onMessage]);
+  }, [roomId]);
 
   return { connected };
 }
