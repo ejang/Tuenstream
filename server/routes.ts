@@ -81,21 +81,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const apiKey = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
+      console.log('YouTube API Key available:', !!apiKey);
+      
       if (!apiKey) {
+        console.error('YouTube API key not configured');
         return res.status(500).json({ message: "YouTube API key not configured" });
       }
 
       const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(q)}&type=video&key=${apiKey}`;
-      const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&key=${apiKey}`;
-
+      console.log('Searching YouTube with query:', q);
+      
       const searchResponse = await fetch(searchUrl);
       const searchData = await searchResponse.json();
+      
+      console.log('YouTube search response status:', searchResponse.status);
+      console.log('YouTube search response:', JSON.stringify(searchData, null, 2));
 
-      if (!searchData.items) {
+      if (!searchResponse.ok) {
+        console.error('YouTube API error:', searchData);
+        if (searchData.error?.code === 403 && searchData.error?.errors?.[0]?.reason === 'quotaExceeded') {
+          return res.status(503).json({ 
+            message: "YouTube API 일일 할당량이 초과되었습니다. 내일 다시 시도해주세요.", 
+            error: "QUOTA_EXCEEDED" 
+          });
+        }
+        return res.status(500).json({ message: "YouTube API error", error: searchData });
+      }
+
+      if (!searchData.items || searchData.items.length === 0) {
+        console.log('No search results found');
         return res.json([]);
       }
 
       const videoIds = searchData.items.map((item: any) => item.id.videoId).join(',');
+      const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&key=${apiKey}`;
       const detailsResponse = await fetch(`${videoDetailsUrl}&id=${videoIds}`);
       const detailsData = await detailsResponse.json();
 
@@ -112,10 +131,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
+      console.log('Returning', results.length, 'search results');
       res.json(results);
     } catch (error) {
       console.error('YouTube search error:', error);
-      res.status(500).json({ message: "Failed to search YouTube" });
+      res.status(500).json({ message: "Failed to search YouTube", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
