@@ -464,34 +464,36 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
           )}
 
           {/* AI Controls - Enhanced Visibility */}
-          <div className="mt-4 p-5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border-2 border-blue-400/30 shadow-lg">
+          <div className="mt-4 p-5 bg-gradient-to-r from-blue-500/15 to-blue-600/15 rounded-xl border-2 border-blue-400/40 shadow-lg backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-lg">
+                <div className="p-2 bg-blue-500/25 rounded-lg border border-blue-400/30">
                   <Bot className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
                   <span className="text-base font-semibold text-foreground">AI 자동 선곡</span>
-                  <div className="text-xs text-blue-300 mt-0.5">
-                    {room.autoSelection ? "✨ 활성화됨" : "💤 비활성화됨"}
+                  <div className="text-xs mt-0.5">
+                    <span className={`font-medium ${room.autoSelection ? 'text-blue-400' : 'text-gray-400'}`}>
+                      {room.autoSelection ? "✨ 활성화됨" : "💤 비활성화됨"}
+                    </span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="text-xs text-muted-foreground">
+              <div className="flex items-center gap-3">
+                <div className={`text-xs font-semibold px-2 py-1 rounded-full ${room.autoSelection ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30' : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'}`}>
                   {room.autoSelection ? "ON" : "OFF"}
                 </div>
                 <Switch
                   checked={room.autoSelection}
                   onCheckedChange={() => toggleAutoSelectionMutation.mutate()}
                   disabled={toggleAutoSelectionMutation.isPending}
-                  className="data-[state=checked]:bg-blue-500"
+                  className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-400"
                 />
               </div>
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground flex-1">
                 {room.autoSelection 
                   ? "큐가 비어있을 때 AI가 자동으로 곡을 추천합니다" 
                   : "AI 자동 선곡이 비활성화되어 있습니다"}
@@ -499,9 +501,7 @@ export default function CurrentlyPlaying({ room }: CurrentlyPlayingProps) {
               <Button
                 onClick={() => aiRecommendMutation.mutate()}
                 disabled={aiRecommendMutation.isPending}
-                variant="outline"
-                size="sm"
-                className="ml-2 h-7 px-2 text-xs"
+                className={`ml-3 h-8 px-3 text-xs font-medium transition-all duration-200 ${room.autoSelection ? 'bg-blue-500 hover:bg-blue-600 text-white border border-blue-400' : 'bg-gray-500 hover:bg-gray-600 text-white border border-gray-400'}`}
               >
                 <Zap className="w-3 h-3 mr-1" />
                 {aiRecommendMutation.isPending ? "추천 중..." : "지금 추천"}
