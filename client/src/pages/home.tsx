@@ -27,12 +27,14 @@ export default function Home() {
     enabled: !!roomId,
   });
 
-  const { connected } = useWebSocket(roomId || null, (message) => {
-    if (message.type === 'room_state' || message.type === 'queue_updated' || 
-        message.type === 'participants_updated' || message.type === 'track_changed') {
-      queryClient.setQueryData(["/api/rooms", roomId], message.data);
-    }
-  });
+  // Temporarily disable WebSocket to test basic functionality
+  // const { connected } = useWebSocket(roomId || null, (message) => {
+  //   if (message.type === 'room_state' || message.type === 'queue_updated' || 
+  //       message.type === 'participants_updated' || message.type === 'track_changed') {
+  //     queryClient.setQueryData(["/api/rooms", roomId], message.data);
+  //   }
+  // });
+  const connected = false;
 
   const createRoomMutation = useMutation({
     mutationFn: async () => {

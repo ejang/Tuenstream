@@ -9,50 +9,70 @@ export function useWebSocket(roomId: string | null, onMessage: (message: WebSock
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
 
   useEffect(() => {
     if (!roomId) return;
 
     const connect = () => {
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
-      
-      wsRef.current = new WebSocket(wsUrl);
+      // Prevent too many reconnection attempts
+      if (reconnectAttempts.current >= maxReconnectAttempts) {
+        console.log('Max reconnection attempts reached');
+        return;
+      }
 
-      wsRef.current.onopen = () => {
-        setConnected(true);
-        console.log('WebSocket connected');
+      try {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const wsUrl = `${protocol}//${window.location.host}/ws`;
         
-        // Join the room
-        wsRef.current?.send(JSON.stringify({
-          type: 'join_room',
-          roomId: roomId
-        }));
-      };
+        wsRef.current = new WebSocket(wsUrl);
 
-      wsRef.current.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          onMessage(message);
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
-        }
-      };
+        wsRef.current.onopen = () => {
+          setConnected(true);
+          reconnectAttempts.current = 0; // Reset on successful connection
+          console.log('WebSocket connected');
+          
+          // Join the room
+          wsRef.current?.send(JSON.stringify({
+            type: 'join_room',
+            roomId: roomId
+          }));
+        };
 
-      wsRef.current.onclose = () => {
+        wsRef.current.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            onMessage(message);
+          } catch (error) {
+            console.error('Failed to parse WebSocket message:', error);
+          }
+        };
+
+        wsRef.current.onclose = (event) => {
+          setConnected(false);
+          console.log('WebSocket disconnected', event.code, event.reason);
+          
+          // Only attempt to reconnect if it wasn't a normal closure and we haven't exceeded attempts
+          if (event.code !== 1000 && reconnectAttempts.current < maxReconnectAttempts) {
+            reconnectAttempts.current++;
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000); // Exponential backoff
+            
+            reconnectTimeoutRef.current = setTimeout(() => {
+              console.log(`Attempting to reconnect... (${reconnectAttempts.current}/${maxReconnectAttempts})`);
+              connect();
+            }, delay);
+          }
+        };
+
+        wsRef.current.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          setConnected(false);
+        };
+      } catch (error) {
+        console.error('Failed to create WebSocket:', error);
         setConnected(false);
-        console.log('WebSocket disconnected');
-        
-        // Attempt to reconnect after 3 seconds
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('Attempting to reconnect...');
-          connect();
-        }, 3000);
-      };
-
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
+      }
     };
 
     connect();
@@ -61,8 +81,8 @@ export function useWebSocket(roomId: string | null, onMessage: (message: WebSock
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
-      if (wsRef.current) {
-        wsRef.current.close();
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.close(1000, 'Component unmounting');
       }
     };
   }, [roomId, onMessage]);
