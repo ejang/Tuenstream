@@ -279,13 +279,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/rooms/:roomId/next", async (req, res) => {
     try {
       const room = await storage.getRoom(req.params.roomId);
-      if (!room || room.queue.length === 0) {
-        return res.status(404).json({ message: "Room not found or queue is empty" });
+      if (!room) {
+        return res.status(404).json({ message: "Room not found" });
       }
 
-      const nextSong = room.queue[0];
-      await storage.setCurrentTrack(req.params.roomId, nextSong);
-      await storage.removeFromQueue(req.params.roomId, nextSong.id);
+      if (room.queue.length > 0) {
+        const nextSong = room.queue[0];
+        await storage.setCurrentTrack(req.params.roomId, nextSong);
+        await storage.removeFromQueue(req.params.roomId, nextSong.id);
+        await storage.updatePlaybackState(req.params.roomId, true, 0);
+      } else {
+        // No more songs in queue, stop playing
+        await storage.setCurrentTrack(req.params.roomId, null);
+        await storage.updatePlaybackState(req.params.roomId, false, 0);
+      }
 
       const updatedRoom = await storage.getRoom(req.params.roomId);
       broadcastToRoom(req.params.roomId, {
@@ -297,7 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to skip to next track" });
     }
-  });
+  })
 
   return httpServer;
 }

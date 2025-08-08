@@ -73,6 +73,14 @@ export class MemStorage implements IStorage {
       queue: [...room.queue, song],
     };
     
+    // If no current track is playing, automatically start the first song
+    if (!updatedRoom.currentTrack && updatedRoom.queue.length === 1) {
+      updatedRoom.currentTrack = song;
+      updatedRoom.queue = [];
+      updatedRoom.isPlaying = true;
+      updatedRoom.currentTime = 0;
+    }
+    
     this.rooms.set(roomId, updatedRoom);
     
     // Update participant song count

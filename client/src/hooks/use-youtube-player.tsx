@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-export function useYouTubePlayer(videoId: string | null) {
+export function useYouTubePlayer(videoId: string | null, onEnded?: () => void) {
   const [player, setPlayer] = useState<any>(null);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const playerInitialized = useRef(false);
@@ -44,7 +44,10 @@ export function useYouTubePlayer(videoId: string | null) {
             setIsPlayerReady(true);
           },
           onStateChange: (event: any) => {
-            // Handle state changes if needed
+            // YouTube Player States: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued)
+            if (event.data === 0 && onEnded) { // Video ended
+              onEnded();
+            }
           },
         },
       });
