@@ -1,44 +1,53 @@
-# Tuenstream 배포 가이드 (Supabase + Vercel)
+# Tuenstream 배포 가이드 (Supabase + Vercel/Railway)
 
-## ⚠️ 중요: WebSocket 제한사항
+## ✅ Vercel 배포 가능
 
-**현재 이 애플리케이션은 WebSocket을 사용하여 실시간 동기화를 구현하고 있습니다.**
+**좋은 소식!** 이제 Tuenstream은 Vercel의 Serverless Functions에서 완벽하게 작동합니다.
 
-Vercel의 Serverless Functions는 **장시간 유지되는 WebSocket 연결을 지원하지 않습니다**.
-이는 Vercel의 아키텍처 제한사항으로, 각 요청은 최대 60초(Pro 플랜) 또는 10초(Hobby 플랜)까지만 실행됩니다.
+### 최근 변경사항
 
-### 해결 방안
-
-다음 중 하나를 선택하세요:
-
-#### 옵션 1: Railway로 변경 (권장) ⭐
-- WebSocket 완전 지원
-- Supabase와 호환 가능
-- 무료 티어: $5 크레딧/월
-- 설정이 더 간단함
-
-**Railway 배포 방법**:
-```bash
-# Railway CLI 설치
-npm i -g @railway/cli
-
-# 로그인 및 배포
-railway login
-railway init
-railway up
-```
-
-#### 옵션 2: Vercel + Supabase Realtime
-Supabase의 Realtime 기능으로 WebSocket을 대체 (코드 수정 필요)
-
-#### 옵션 3: Vercel + Pusher/Ably
-외부 실시간 서비스 사용 (코드 수정 필요)
+- ✅ **WebSocket 제거**: HTTP 폴링으로 전환 (2초마다 상태 업데이트)
+- ✅ **개인용 플레이어로 전환**: 멀티 사용자 방 기능 제거
+- ✅ **Serverless 호환**: Vercel, Railway, Render 등 모든 플랫폼에서 작동
 
 ---
 
-## Vercel + Supabase 배포 (WebSocket 제한 있음)
+## 배포 옵션
 
-WebSocket이 제한적으로 작동할 수 있지만, 기본 배포를 진행하려면 아래 단계를 따르세요.
+### 옵션 1: Vercel (권장) ⭐⭐⭐⭐⭐
+
+**장점**:
+- 무료 티어 제공
+- 자동 HTTPS
+- GitHub 연동 자동 배포
+- 글로벌 CDN
+- 즉각적인 배포
+
+**단점**:
+- 실시간 동기화 없음 (2초 폴링 사용)
+
+### 옵션 2: Railway ⭐⭐⭐⭐
+
+**장점**:
+- PostgreSQL 자동 프로비저닝
+- 간단한 설정
+- $5 무료 크레딧/월
+
+**단점**:
+- 무료 크레딧 소진 후 유료
+
+### 옵션 3: Render ⭐⭐⭐
+
+**장점**:
+- 무료 티어 (제한적)
+- PostgreSQL 포함
+
+**단점**:
+- 무료 티어는 느림 (콜드 스타트)
+
+---
+
+## Vercel 배포 가이드
 
 ### 1단계: Supabase 프로젝트 생성
 
@@ -73,20 +82,7 @@ postgresql://postgres:your_password@db.xxxxxxxxxxxxx.supabase.co:5432/postgres
 2. "Create API Key" 클릭
 3. API 키 복사
 
-### 4단계: 데이터베이스 스키마 적용
-
-현재 애플리케이션은 인메모리 스토리지를 사용 중입니다.
-프로덕션 배포를 위해서는 **PostgreSQL 데이터베이스 연결**이 필요합니다.
-
-```bash
-# 환경 변수 설정
-export DATABASE_URL="postgresql://postgres:your_password@db.xxxxx.supabase.co:5432/postgres"
-
-# 데이터베이스 스키마 적용
-npm run db:push
-```
-
-### 5단계: Vercel 배포
+### 4단계: Vercel 배포
 
 #### GitHub 연동 배포 (권장)
 
@@ -97,11 +93,12 @@ npm run db:push
 5. 환경 변수 설정:
 
 ```env
-DATABASE_URL=postgresql://postgres:your_password@db.xxxxx.supabase.co:5432/postgres
 GOOGLE_API_KEY=your_youtube_api_key
 GEMINI_API_KEY=your_gemini_api_key
 NODE_ENV=production
 ```
+
+**참고**: DATABASE_URL은 선택 사항입니다. 현재는 인메모리 스토리지를 사용하며, 데이터는 서버 재시작 시 초기화됩니다.
 
 6. Deploy 클릭
 
@@ -115,7 +112,6 @@ npm i -g vercel
 vercel
 
 # 환경 변수 설정
-vercel env add DATABASE_URL
 vercel env add GOOGLE_API_KEY
 vercel env add GEMINI_API_KEY
 
@@ -123,15 +119,15 @@ vercel env add GEMINI_API_KEY
 vercel --prod
 ```
 
-### 6단계: 배포 확인
+### 5단계: 배포 확인
 
 1. Vercel이 제공하는 URL 접속
 2. 음악 검색 기능 테스트
-3. 방 생성 및 참가 테스트
+3. 플레이리스트 추가 및 재생 테스트
 
 ---
 
-## Railway 배포 (WebSocket 완전 지원) ⭐
+## Railway 배포 가이드
 
 ### 1단계: Railway 프로젝트 생성
 
@@ -139,17 +135,7 @@ vercel --prod
 2. "New Project" → "Deploy from GitHub repo"
 3. 저장소 선택
 
-### 2단계: PostgreSQL 추가
-
-1. 프로젝트에서 "New" 클릭
-2. "Database" → "PostgreSQL" 선택
-3. 자동으로 `DATABASE_URL` 환경 변수 설정됨
-
-또는 Supabase 사용:
-1. "Variables" 탭
-2. `DATABASE_URL` 추가 (Supabase 연결 문자열)
-
-### 3단계: 환경 변수 설정
+### 2단계: 환경 변수 설정
 
 Variables 탭에서 추가:
 ```
@@ -158,13 +144,13 @@ GEMINI_API_KEY=your_gemini_api_key
 NODE_ENV=production
 ```
 
-### 4단계: 빌드 설정
+### 3단계: 빌드 설정
 
 Settings → Deploy에서:
 - **Build Command**: `npm install && npm run build`
 - **Start Command**: `npm start`
 
-### 5단계: 도메인 설정
+### 4단계: 도메인 설정
 
 Settings → Networking에서 커스텀 도메인 추가 가능
 
@@ -174,37 +160,46 @@ Settings → Networking에서 커스텀 도메인 추가 가능
 
 | 변수명 | 필수 | 설명 |
 |--------|------|------|
-| `DATABASE_URL` | ✅ | PostgreSQL 연결 문자열 |
 | `GOOGLE_API_KEY` | ✅ | YouTube Data API v3 키 |
 | `GEMINI_API_KEY` | ✅ | Google Gemini API 키 |
 | `NODE_ENV` | ⚠️ | `production` (권장) |
 | `PORT` | ❌ | 포트 번호 (Vercel/Railway가 자동 설정) |
+| `DATABASE_URL` | ❌ | PostgreSQL 연결 문자열 (선택 사항) |
 
 ---
 
-## 주의사항
+## 데이터 지속성 (선택 사항)
 
-### 데이터베이스 마이그레이션
-- 배포 전 반드시 `npm run db:push` 실행
-- Supabase 대시보드에서 테이블 생성 확인
+현재 앱은 **인메모리 스토리지**를 사용합니다:
+- ✅ 빠르고 간단함
+- ✅ 추가 설정 불필요
+- ❌ 서버 재시작 시 데이터 손실
+- ❌ 여러 서버 인스턴스 간 상태 동기화 불가
 
-### API 할당량
-- YouTube API: 무료 티어 일일 10,000 units
-- Gemini API: 무료 티어 60 requests/분
+### PostgreSQL 연결하기 (고급)
 
-### WebSocket 연결
-- **Vercel**: WebSocket이 제한적으로 작동하거나 작동하지 않을 수 있음
-- **Railway**: WebSocket 완전 지원
+데이터를 영구적으로 저장하려면:
 
-### CORS 설정
-현재 CORS 설정이 없습니다. 필요시 `server/index.ts`에 추가:
+1. Supabase 또는 Railway PostgreSQL 사용
+2. DATABASE_URL 환경 변수 설정
+3. 데이터베이스 마이그레이션 실행: `npm run db:push`
+4. `server/storage.ts`를 데이터베이스 기반 구현으로 수정 필요
 
-```javascript
-import cors from 'cors';
-app.use(cors({
-  origin: process.env.FRONTEND_URL || '*'
-}));
-```
+**참고**: 현재 버전은 데이터베이스 연결 없이도 작동합니다.
+
+---
+
+## API 할당량 및 제한
+
+### YouTube API
+- 무료 티어: 일일 10,000 units
+- 검색 1회 = 100 units
+- 비디오 정보 조회 1회 = 1 unit
+- **할당량 초과 시**: 다음 날까지 대기 또는 유료 플랜 구독
+
+### Gemini API
+- 무료 티어: 60 requests/분
+- AI 추천 기능 사용 시 적용
 
 ---
 
@@ -219,40 +214,43 @@ npm run build
 npm run check
 ```
 
-### 데이터베이스 연결 실패
-- DATABASE_URL 형식 확인
-- Supabase 프로젝트가 활성화되어 있는지 확인
-- 방화벽 설정 확인 (Supabase는 기본적으로 모든 IP 허용)
-
-### WebSocket 작동 안 함
-- Vercel 사용 중이라면 Railway로 마이그레이션 고려
-- 또는 Supabase Realtime으로 대체
-
 ### YouTube API 할당량 초과
 - Google Cloud Console에서 할당량 확인
+- 검색 빈도 줄이기
 - 캐싱 로직 추가 고려
+
+### Vercel Function Timeout
+- Vercel Hobby: 10초
+- Vercel Pro: 60초
+- 현재 앱은 HTTP 폴링을 사용하므로 타임아웃 문제 없음
 
 ---
 
-## 권장 배포 플랫폼
+## 성능 최적화
 
-| 플랫폼 | WebSocket | 가격 | 추천도 |
-|--------|-----------|------|--------|
-| **Railway** | ✅ 완전 지원 | $5/월 무료 크레딧 | ⭐⭐⭐⭐⭐ |
-| **Render** | ✅ 완전 지원 | 무료 티어 있음 | ⭐⭐⭐⭐ |
-| **Fly.io** | ✅ 완전 지원 | 무료 티어 있음 | ⭐⭐⭐⭐ |
-| **Vercel** | ❌ 제한적 | 무료 티어 있음 | ⭐⭐ |
+### HTTP 폴링 간격 조정
 
-**결론**: WebSocket이 필수인 이 프로젝트는 **Railway**나 **Render** 사용을 강력히 권장합니다.
+`client/src/pages/home.tsx`에서:
+```typescript
+const { data: room, isLoading } = useQuery<Room>({
+  queryKey: ["/api/player"],
+  refetchInterval: 2000, // 2초 → 원하는 간격으로 변경 (밀리초)
+});
+```
+
+**권장값**:
+- 빠른 응답: 1000ms (1초)
+- 균형: 2000ms (2초) - **기본값**
+- 배터리 절약: 5000ms (5초)
 
 ---
 
 ## 다음 단계
 
 1. ✅ `.env.example` 참고하여 환경 변수 준비
-2. ✅ Supabase 프로젝트 생성
-3. ✅ API 키 발급
-4. ⚠️ 배포 플랫폼 선택 (Railway 권장)
-5. 🚀 배포 및 테스트
+2. ✅ API 키 발급 (YouTube, Gemini)
+3. ✅ 배포 플랫폼 선택 (Vercel 권장)
+4. 🚀 배포 및 테스트
+5. 🎵 음악 즐기기!
 
-배포 중 문제가 발생하면 이슈를 등록해주세요!
+배포 중 문제가 발생하면 GitHub Issues에 문의해주세요!
