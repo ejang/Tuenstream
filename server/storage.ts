@@ -1,219 +1,138 @@
-import { type Room, type Song, type Participant, type InsertRoom, type InsertParticipant, type InsertSong } from "@shared/schema";
+import { type Song, type InsertSong } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
-  getRoom(id: string): Promise<Room | undefined>;
-  getRoomByCode(code: string): Promise<Room | undefined>;
-  createRoom(room: InsertRoom): Promise<Room>;
-  updateRoom(id: string, updates: Partial<Room>): Promise<Room | undefined>;
-  
-  addSongToQueue(roomId: string, song: InsertSong): Promise<Song | undefined>;
-  removeFromQueue(roomId: string, songId: string): Promise<boolean>;
-  clearQueue(roomId: string): Promise<boolean>;
-  
-  addParticipant(roomId: string, participant: InsertParticipant): Promise<Participant | undefined>;
-  removeParticipant(roomId: string, participantId: string): Promise<boolean>;
-  
-  setCurrentTrack(roomId: string, song: Song | null): Promise<boolean>;
-  updatePlaybackState(roomId: string, isPlaying: boolean, currentTime: number): Promise<boolean>;
-  
-  toggleAutoSelection(roomId: string): Promise<boolean>;
-  getRecentTracks(roomId: string, limit?: number): Promise<Song[]>;
+  getCurrentTrack(): Promise<Song | null>;
+  setCurrentTrack(song: Song | null): Promise<boolean>;
+
+  getQueue(): Promise<Song[]>;
+  addSongToQueue(song: InsertSong): Promise<Song>;
+  removeFromQueue(songId: string): Promise<boolean>;
+  clearQueue(): Promise<boolean>;
+
+  getPlaybackState(): Promise<{ isPlaying: boolean; currentTime: number }>;
+  updatePlaybackState(isPlaying: boolean, currentTime: number): Promise<boolean>;
+
+  getAutoSelection(): Promise<boolean>;
+  toggleAutoSelection(): Promise<boolean>;
+  getRecentTracks(limit?: number): Promise<Song[]>;
+}
+
+interface AppState {
+  currentTrack: Song | null;
+  queue: Song[];
+  isPlaying: boolean;
+  currentTime: number;
+  autoSelection: boolean;
+  playHistory: Song[];
 }
 
 export class MemStorage implements IStorage {
-  private rooms: Map<string, Room>;
+  private state: AppState;
 
   constructor() {
-    this.rooms = new Map();
-  }
-
-  async getRoom(id: string): Promise<Room | undefined> {
-    return this.rooms.get(id);
-  }
-
-  async getRoomByCode(code: string): Promise<Room | undefined> {
-    return Array.from(this.rooms.values()).find(room => room.code === code);
-  }
-
-  async createRoom(insertRoom: InsertRoom): Promise<Room> {
-    const id = randomUUID();
-    const room: Room = {
-      ...insertRoom,
-      id,
+    this.state = {
       currentTrack: null,
       queue: [],
-      participants: [],
       isPlaying: false,
       currentTime: 0,
       autoSelection: false,
-      createdAt: new Date(),
+      playHistory: [],
     };
-    this.rooms.set(id, room);
-    return room;
   }
 
-  async updateRoom(id: string, updates: Partial<Room>): Promise<Room | undefined> {
-    const room = this.rooms.get(id);
-    if (!room) return undefined;
-    
-    const updatedRoom = { ...room, ...updates };
-    this.rooms.set(id, updatedRoom);
-    return updatedRoom;
+  async getCurrentTrack(): Promise<Song | null> {
+    return this.state.currentTrack;
   }
 
-  async addSongToQueue(roomId: string, insertSong: InsertSong): Promise<Song | undefined> {
-    const room = this.rooms.get(roomId);
-    if (!room) return undefined;
+  async setCurrentTrack(song: Song | null): Promise<boolean> {
+    // Add current track to history if exists
+    if (this.state.currentTrack) {
+      this.state.playHistory.unshift(this.state.currentTrack);
+      // Keep only last 10 tracks
+      this.state.playHistory = this.state.playHistory.slice(0, 10);
+    }
 
+    this.state.currentTrack = song;
+    this.state.currentTime = 0;
+    return true;
+  }
+
+  async getQueue(): Promise<Song[]> {
+    return this.state.queue;
+  }
+
+  async addSongToQueue(insertSong: InsertSong): Promise<Song> {
     const song: Song = {
       ...insertSong,
       id: randomUUID(),
       requestedAt: new Date(),
     };
 
-    const updatedRoom = {
-      ...room,
-      queue: [...room.queue, song],
-    };
-    
+    this.state.queue.push(song);
+
     // If no current track is playing, automatically start the first song
-    if (!updatedRoom.currentTrack && updatedRoom.queue.length === 1) {
-      updatedRoom.currentTrack = song;
-      updatedRoom.queue = [];
-      updatedRoom.isPlaying = true;
-      updatedRoom.currentTime = 0;
+    if (!this.state.currentTrack && this.state.queue.length === 1) {
+      this.state.currentTrack = song;
+      this.state.queue = [];
+      this.state.isPlaying = true;
+      this.state.currentTime = 0;
     }
-    
-    this.rooms.set(roomId, updatedRoom);
-    
-    // Update participant song count
-    const participantIndex = updatedRoom.participants.findIndex(p => p.name === song.requestedBy);
-    if (participantIndex !== -1) {
-      updatedRoom.participants[participantIndex].songsAdded += 1;
-      this.rooms.set(roomId, updatedRoom);
-    }
-    
+
     return song;
   }
 
-  async removeFromQueue(roomId: string, songId: string): Promise<boolean> {
-    const room = this.rooms.get(roomId);
-    if (!room) return false;
-
-    const updatedRoom = {
-      ...room,
-      queue: room.queue.filter(song => song.id !== songId),
-    };
-    
-    this.rooms.set(roomId, updatedRoom);
+  async removeFromQueue(songId: string): Promise<boolean> {
+    this.state.queue = this.state.queue.filter(song => song.id !== songId);
     return true;
   }
 
-  async clearQueue(roomId: string): Promise<boolean> {
-    const room = this.rooms.get(roomId);
-    if (!room) return false;
-
-    const updatedRoom = {
-      ...room,
-      queue: [],
-    };
-    
-    this.rooms.set(roomId, updatedRoom);
+  async clearQueue(): Promise<boolean> {
+    this.state.queue = [];
     return true;
   }
 
-  async addParticipant(roomId: string, insertParticipant: InsertParticipant): Promise<Participant | undefined> {
-    const room = this.rooms.get(roomId);
-    if (!room) return undefined;
-
-    // Check if participant already exists
-    const existingParticipant = room.participants.find(p => p.name === insertParticipant.name);
-    if (existingParticipant) return existingParticipant;
-
-    const participant: Participant = {
-      ...insertParticipant,
-      id: randomUUID(),
-      songsAdded: 0,
-      joinedAt: new Date(),
+  async getPlaybackState(): Promise<{ isPlaying: boolean; currentTime: number }> {
+    return {
+      isPlaying: this.state.isPlaying,
+      currentTime: this.state.currentTime,
     };
-
-    const updatedRoom = {
-      ...room,
-      participants: [...room.participants, participant],
-    };
-    
-    this.rooms.set(roomId, updatedRoom);
-    return participant;
   }
 
-  async removeParticipant(roomId: string, participantId: string): Promise<boolean> {
-    const room = this.rooms.get(roomId);
-    if (!room) return false;
-
-    const updatedRoom = {
-      ...room,
-      participants: room.participants.filter(p => p.id !== participantId),
-    };
-    
-    this.rooms.set(roomId, updatedRoom);
+  async updatePlaybackState(isPlaying: boolean, currentTime: number): Promise<boolean> {
+    this.state.isPlaying = isPlaying;
+    this.state.currentTime = currentTime;
     return true;
   }
 
-  async setCurrentTrack(roomId: string, song: Song | null): Promise<boolean> {
-    const room = this.rooms.get(roomId);
-    if (!room) return false;
+  async getAutoSelection(): Promise<boolean> {
+    return this.state.autoSelection;
+  }
 
-    const updatedRoom = {
-      ...room,
-      currentTrack: song,
-      currentTime: 0,
-    };
-    
-    this.rooms.set(roomId, updatedRoom);
+  async toggleAutoSelection(): Promise<boolean> {
+    this.state.autoSelection = !this.state.autoSelection;
     return true;
   }
 
-  async updatePlaybackState(roomId: string, isPlaying: boolean, currentTime: number): Promise<boolean> {
-    const room = this.rooms.get(roomId);
-    if (!room) return false;
-
-    const updatedRoom = {
-      ...room,
-      isPlaying,
-      currentTime,
-    };
-    
-    this.rooms.set(roomId, updatedRoom);
-    return true;
+  async getRecentTracks(limit: number = 5): Promise<Song[]> {
+    return this.state.playHistory.slice(0, limit);
   }
 
-  async toggleAutoSelection(roomId: string): Promise<boolean> {
-    const room = this.rooms.get(roomId);
-    if (!room) return false;
-
-    const updatedRoom = {
-      ...room,
-      autoSelection: !room.autoSelection,
+  // Helper method to get all state (for API response)
+  // Returns Room-compatible format for backward compatibility with frontend
+  async getAllState() {
+    return {
+      id: "default",
+      code: "MUSIC",
+      name: "iPod Music",
+      currentTrack: this.state.currentTrack,
+      queue: this.state.queue,
+      participants: [],
+      isPlaying: this.state.isPlaying,
+      currentTime: this.state.currentTime,
+      autoSelection: this.state.autoSelection,
+      createdAt: new Date(),
     };
-    
-    this.rooms.set(roomId, updatedRoom);
-    return true;
-  }
-
-  async getRecentTracks(roomId: string, limit: number = 5): Promise<Song[]> {
-    const room = this.rooms.get(roomId);
-    if (!room) return [];
-
-    // For in-memory storage, we'll maintain a simple recent tracks list
-    // In a real database, you'd query a separate played_tracks table
-    const recentTracks: Song[] = [];
-    
-    if (room.currentTrack) {
-      recentTracks.push(room.currentTrack);
-    }
-    
-    return recentTracks.slice(0, limit);
   }
 }
 

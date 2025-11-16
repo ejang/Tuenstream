@@ -4,15 +4,10 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Search, Plus } from "lucide-react";
 import type { YoutubeSearchResult } from "@shared/schema";
 
-interface SearchSectionProps {
-  roomId: string;
-}
-
-export default function SearchSection({ roomId }: SearchSectionProps) {
+export default function SearchSection() {
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
 
@@ -31,19 +26,18 @@ export default function SearchSection({ roomId }: SearchSectionProps) {
 
   const addToQueueMutation = useMutation({
     mutationFn: async (song: YoutubeSearchResult) => {
-      const participantName = "User"; // In a real app, this would come from authentication
-      const response = await apiRequest("POST", `/api/rooms/${roomId}/queue`, {
+      const response = await apiRequest("POST", "/api/queue", {
         youtubeId: song.id,
         title: song.title,
         artist: song.artist,
         duration: song.duration,
         thumbnail: song.thumbnail,
-        requestedBy: participantName,
+        requestedBy: "You",
       });
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/player"] });
       // Clear search results after adding song
       setSearchQuery("");
       toast({
@@ -73,7 +67,7 @@ export default function SearchSection({ roomId }: SearchSectionProps) {
     <section className="mb-10">
       <div className="max-w-2xl mx-auto">
         <h2 className="text-lg font-light text-foreground mb-5 text-center">Search Music</h2>
-        
+
         <div className="bg-primary rounded-2xl shadow-lg border border-border overflow-hidden">
           <div className="bg-secondary/20 px-3 py-1.5 text-center border-b border-border">
             <div className="text-xs font-mono text-muted-foreground">YouTube Music Search</div>
@@ -88,8 +82,8 @@ export default function SearchSection({ roomId }: SearchSectionProps) {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-3 py-2.5 pr-11 bg-input border-border rounded-lg text-foreground text-sm focus:ring-2 focus:ring-text/20 focus:border-text transition-all duration-200"
                 />
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="absolute right-1.5 top-1/2 transform -translate-y-1/2 p-1.5 bg-accent hover:bg-secondary text-foreground rounded-md transition-colors duration-200"
                 >
                   <Search className="w-3 h-3" />
@@ -113,9 +107,9 @@ export default function SearchSection({ roomId }: SearchSectionProps) {
             {searchResults.map((result) => (
               <div key={result.id} className="bg-primary border border-border rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
                 <div className="flex items-center p-3">
-                  <img 
-                    src={result.thumbnail} 
-                    alt="Song thumbnail" 
+                  <img
+                    src={result.thumbnail}
+                    alt="Song thumbnail"
                     className="w-12 h-9 object-cover rounded border border-border"
                   />
                   <div className="ml-3 flex-1 min-w-0">
@@ -123,7 +117,7 @@ export default function SearchSection({ roomId }: SearchSectionProps) {
                     <p className="text-xs text-muted-foreground truncate">{result.artist}</p>
                     <p className="text-xs text-muted-foreground font-mono mt-0.5">{result.duration}</p>
                   </div>
-                  <Button 
+                  <Button
                     onClick={() => handleAddToQueue(result)}
                     disabled={addToQueueMutation.isPending}
                     className="ml-3 px-3 py-1.5 bg-text text-primary rounded-md hover:bg-foreground transition-colors duration-200 text-xs font-medium"

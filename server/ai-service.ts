@@ -70,9 +70,3 @@ export async function getAIMusicRecommendations(
   }
 }
 
-export async function shouldTriggerAutoSelection(
-  room: { queue: Song[]; currentTrack: Song | null; autoSelection?: boolean }
-): Promise<boolean> {
-  // Only trigger if auto-selection is enabled and queue is low
-  return !!(room.autoSelection && room.queue.length <= 1 && room.currentTrack);
-}
